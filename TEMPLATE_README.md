@@ -5,9 +5,7 @@ An opinionated [cargo-generate](https://github.com/cargo-generate/cargo-generate
 ## Usage
 
 ```bash
-cargo generate --path /path/to/cratemplate
-# or from a git URL:
-# cargo generate gh:youruser/cratemplate
+cargo generate gh:mlavrinenko/cratemplate
 ```
 
 You'll be prompted for project name, description, and license.
