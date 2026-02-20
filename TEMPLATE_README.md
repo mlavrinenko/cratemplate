@@ -6,6 +6,8 @@ An opinionated [cargo-generate](https://github.com/cargo-generate/cargo-generate
 
 ```bash
 cargo generate gh:mlavrinenko/cratemplate
+# or using nix:
+nix run nixpkgs#cargo-generate -- generate --git https://github.com/mlavrinenko/cratemplate
 ```
 
 You'll be prompted for project name, description, and license.
