@@ -38,6 +38,7 @@
             cargo
             cargo-tarpaulin
             clippy
+            rustfmt
             just
             nixd
             rust-analyzer
