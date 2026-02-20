@@ -1,7 +1,7 @@
 [template]
 cargo_generate_version = ">=0.10.0"
 exclude = ["Justfile", "flake.nix"]
-ignore = ["bin", ".direnv", "flake.lock", "TEMPLATE_README.md"]
+ignore = [".direnv", "flake.lock"]
 
 [placeholders.description]
 type = "string"

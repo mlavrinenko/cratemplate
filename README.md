@@ -1,32 +1,34 @@
-# {{project-name}}
+# cratemplate
 
-{{description}}
+An opinionated [cargo-generate](https://github.com/cargo-generate/cargo-generate) template for Rust projects.
 
-## Development
-
-Prerequisites: [Nix](https://nixos.org/) with flakes enabled.
+## Usage
 
 ```bash
-# Enter dev shell
-direnv allow
-# or: nix develop
-
-# Run checks (clippy + tests + file size limits)
-just check
-
-# Build
-just build
-
-# Run tests
-just test
-
-# Code coverage
-just cover
-
-# Format
-just fmt
+cargo generate gh:mlavrinenko/cratemplate
+# or using nix:
+nix run nixpkgs#cargo-generate -- generate --git https://github.com/mlavrinenko/cratemplate
 ```
 
-## License
+You'll be prompted for project name, description, and license.
 
-{{license}}
+## What you get
+
+- Rust 2024 edition with strict clippy lints
+- Error handling with `anyhow` + `thiserror`
+- CLI support via `clap`
+- Nix flake dev environment (rustc, cargo, clippy, rustfmt, just, rust-analyzer, etc.)
+- `Justfile` with common recipes (`just check`, `just test`, `just cover`, etc.)
+- Code coverage via `cargo-tarpaulin` (70% minimum)
+- File size limits enforced (500 LOC for Rust, 200 for Markdown)
+- `AGENT.md` with rules for LLM coding agents
+
+## Template maintenance
+
+After making changes to the template, validate that it still produces a working project:
+
+```bash
+bin/validate
+```
+
+This generates a project in a temp directory and runs fmt, clippy, tests, build, and file size checks against it.
