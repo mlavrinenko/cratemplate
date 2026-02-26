@@ -20,6 +20,13 @@ just cover
 just fmt
 ```
 
+## Running
+
+```bash
+nix run          # build and run via nix
+cargo run        # or via cargo
+```
+
 ## License
 
 {{license}}

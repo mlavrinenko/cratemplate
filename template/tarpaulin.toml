@@ -1,7 +1,7 @@
 [test_config]
-name = "{{project-name}}"
 workspace = true
 skip-clean = true
+exclude-files = ["src/main.rs"]
 
 [report]
 fail-under = 70

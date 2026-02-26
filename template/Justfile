@@ -2,7 +2,7 @@
 
 # Run all checks (clippy + tests + file size)
 check:
-    cargo clippy --workspace --all-targets -q
+    cargo clippy --workspace --all-targets -q -- -D warnings
     cargo test --workspace -q
     just check-file-size
 
@@ -12,18 +12,18 @@ test *ARGS:
 
 # Run clippy only
 clippy:
-    cargo clippy --workspace --all-targets -q
+    cargo clippy --workspace --all-targets -q -- -D warnings
 
 # Auto-fix clippy warnings
 clippy-fix:
-    cargo clippy --fix --workspace --all-targets
+    cargo clippy --fix --workspace --all-targets -- -D warnings
 
 # Build the project
 build:
     cargo build --workspace -q
 
 # Run coverage with tarpaulin
-measure-coverage:
+cover:
     cargo tarpaulin --workspace --skip-clean
 
 # Format code

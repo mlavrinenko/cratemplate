@@ -28,7 +28,7 @@ You'll be prompted for project name, description, and license.
 After making changes to the template, validate that it still produces a working project:
 
 ```bash
-bin/validate
+just validate
 ```
 
-This generates a project in a temp directory and runs fmt, clippy, tests, build, and file size checks against it.
+This generates a project in a temp directory and runs fmt, clippy, tests, build, coverage, and file size checks against it.

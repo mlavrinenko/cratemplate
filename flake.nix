@@ -21,6 +21,7 @@
         # For `nix develop`:
         devShell = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
+            just
             cargo-generate
           ];
         };
