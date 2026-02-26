@@ -11,16 +11,9 @@ Prerequisites: [Nix](https://nixos.org/) with flakes enabled.
 direnv allow
 # or: nix develop
 
-# Run checks (clippy + tests + file size limits)
-just check
-
-# Build
+just check # clippy + tests + lines-limit-check
 just build
-
-# Run tests
 just test
-
-# Code coverage
 just cover
 
 # Format

@@ -23,8 +23,8 @@ build:
     cargo build --workspace -q
 
 # Run coverage with tarpaulin
-cover:
-    cargo tarpaulin --workspace
+measure-coverage:
+    cargo tarpaulin --workspace --skip-clean
 
 # Format code
 fmt:
