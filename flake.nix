@@ -22,6 +22,8 @@
         devShell = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
             just
+            tokei
+            jq
             cargo-generate
           ];
         };

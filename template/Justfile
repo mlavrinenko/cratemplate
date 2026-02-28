@@ -46,45 +46,4 @@ file-sizes:
 
 # Check for oversized files (fails if any exceed limits)
 check-file-size:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    RUST_LIMIT=500
-    MARKDOWN_LIMIT=200
-
-    # Add paths here to exempt specific files from size limits
-    EXCEPTIONS=()
-
-    failed=0
-
-    while IFS= read -r file; do
-        lines=$(wc -l < "$file")
-        skip=0
-        for exception in "${EXCEPTIONS[@]+"${EXCEPTIONS[@]}"}"; do
-            if [[ "$file" == "./$exception" ]]; then
-                skip=1
-                break
-            fi
-        done
-
-        if [[ $skip -eq 0 && $lines -gt $RUST_LIMIT ]]; then
-            echo "--- $file: $lines lines (limit: $RUST_LIMIT)"
-            failed=1
-        fi
-    done < <(find . -type f -name '*.rs' ! -path './target/*')
-
-    while IFS= read -r file; do
-        lines=$(wc -l < "$file")
-        if [[ $lines -gt $MARKDOWN_LIMIT ]]; then
-            echo "--- $file: $lines lines (limit: $MARKDOWN_LIMIT)"
-            failed=1
-        fi
-    done < <(find . -type f -name '*.md' ! -path './target/*' ! -path './archive/*')
-
-    if [[ $failed -eq 1 ]]; then
-        echo ""
-        echo "Some files exceed size limits. Consider refactoring."
-        exit 1
-    else
-        echo "All files within size limits"
-    fi
+    tokei --files --output json --exclude archive | jq -rf check-file-size.jq
