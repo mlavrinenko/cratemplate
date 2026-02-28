@@ -20,6 +20,8 @@ just cover
 just fmt
 ```
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for coding conventions and contribution guidelines.
+
 ## Running
 
 ```bash
