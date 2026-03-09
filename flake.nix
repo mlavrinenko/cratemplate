@@ -17,9 +17,8 @@
           inherit system;
         };
       in
-      {
-        # For `nix develop`:
-        devShell = pkgs.mkShell {
+      let
+        shell = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
             just
             tokei
@@ -27,6 +26,11 @@
             cargo-generate
           ];
         };
+      in
+      {
+        devShells.default = shell;
+        # Compat alias for older Nix versions that don't resolve devShells.default
+        devShell = shell;
       }
     );
 }
