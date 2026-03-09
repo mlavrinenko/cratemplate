@@ -5,8 +5,13 @@ members = [] # Add sub-crate paths here as the project grows
 name = "{{project-name}}"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
 description = "{{description}}"
 license = "{{license}}"
+repository = "https://github.com/{{gh-username}}/{{project-name}}"
+keywords = []
+categories = ["command-line-utilities"]
+include = ["/src/", "/LICENSE*", "/README.md"]
 
 [lib]
 name = "{{crate_name}}"
@@ -28,6 +33,12 @@ env_logger = "0.11"
 [dev-dependencies]
 assert_cmd = "2"
 predicates = "3"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
 
 [lints]
 workspace = true

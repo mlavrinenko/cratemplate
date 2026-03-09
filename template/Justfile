@@ -1,7 +1,12 @@
 # Development recipes
 
-# Run all checks (clippy + tests + file size)
+# List available recipes
+default:
+    @just --list
+
+# Run all checks (fmt + clippy + tests + file size)
 check:
+    just fmt-check
     cargo clippy --workspace --all-targets -q -- -D warnings
     cargo test --workspace -q
     just check-file-size
@@ -47,3 +52,11 @@ file-sizes:
 # Check for oversized files (fails if any exceed limits)
 check-file-size:
     tokei --files --output json --exclude archive | jq -rf check-file-size.jq
+
+# Tag a release and push (usage: just release 0.1.0)
+release VERSION:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just check
+    git tag -a "v{{ VERSION }}" -m "v{{ VERSION }}"
+    git push origin "v{{ VERSION }}"

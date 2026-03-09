@@ -20,7 +20,8 @@ validate:
             --destination "$WORK_DIR" \
             --name "$PROJECT_NAME" \
             --define "description=Validation test project" \
-            --define "license=MIT"
+            --define "license=MIT" \
+            --define "gh-username=testuser"
 
     cd "$WORK_DIR/$PROJECT_NAME"
     git add -A
