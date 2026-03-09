@@ -1,4 +1,11 @@
-# cratemplate
+<p align="center">
+  <img src="logo.svg" width="200" alt="cratemplate logo">
+</p>
+
+# CRATEmPLATE
+
+[![CI](https://github.com/mlavrinenko/cratemplate/actions/workflows/ci.yml/badge.svg)](https://github.com/mlavrinenko/cratemplate/actions/workflows/ci.yml)
+[![cargo-generate](https://img.shields.io/badge/cargo--generate-template-blue)](https://github.com/cargo-generate/cargo-generate)
 
 An opinionated [cargo-generate](https://github.com/cargo-generate/cargo-generate) template for Rust projects.
 

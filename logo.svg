@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 200 200"
+   width="200"
+   height="200"
+   version="1.1"
+   id="svg27"
+   sodipodi:docname="logo.svg"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs27" />
+  <sodipodi:namedview
+     id="namedview27"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2.8284271"
+     inkscape:cx="114.19774"
+     inkscape:cy="106.9499"
+     inkscape:window-width="2560"
+     inkscape:window-height="1008"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg27" />
+  <!-- Background circle -->
+  <circle
+     cx="100"
+     cy="100"
+     r="96"
+     fill="#fdf6e3"
+     stroke="#c67b2e"
+     stroke-width="3"
+     id="circle1" />
+  <circle
+     cx="100"
+     cy="100"
+     r="92.999451"
+     fill="#fdf6e3"
+     stroke="#c67b2e"
+     stroke-width="2.90624"
+     id="circle1-5"
+     style="stroke:#d89b2e;stroke-opacity:0.37120327" />
+  <!-- Big crate (back-left) -->
+  <g
+     transform="translate(38,52)"
+     id="g6">
+    <!-- Top face -->
+    <polygon
+       points="60,15 30,30 0,15 30,0 "
+       fill="#e8a44a"
+       id="polygon1" />
+    <!-- Front face -->
+    <polygon
+       points="30,30 30,70 0,55 0,15 "
+       fill="#c67b2e"
+       id="polygon2" />
+    <!-- Right face -->
+    <polygon
+       points="60,15 60,55 30,70 30,30 "
+       fill="#d4943a"
+       id="polygon3" />
+    <!-- Plank lines front -->
+    <line
+       x1="15"
+       y1="22.802021"
+       x2="15"
+       y2="62.219025"
+       stroke="#b06820"
+       stroke-width="1.19122"
+       opacity="0.5"
+       id="line3" />
+    <!-- Plank lines right -->
+    <line
+       x1="45"
+       y1="22"
+       x2="45"
+       y2="62"
+       stroke="#b06820"
+       stroke-width="1.2"
+       opacity="0.5"
+       id="line4" />
+    <!-- Cross on front -->
+    <line
+       x1="2.5057731"
+       y1="17.012743"
+       x2="27.387877"
+       y2="67.907959"
+       stroke="#b06820"
+       stroke-width="1.69651"
+       opacity="0.4"
+       id="line5" />
+    <line
+       x1="22.887587"
+       y1="26.367573"
+       x2="7.1407752"
+       y2="58.576962"
+       stroke="#b06820"
+       stroke-width="1.07365"
+       opacity="0.4"
+       id="line6" />
+  </g>
+  <!-- Medium crate (back-right) -->
+  <g
+     transform="translate(95,47)"
+     id="g11">
+    <!-- Top face -->
+    <polygon
+       points="50,12 25,24 0,12 25,0 "
+       fill="#f0b95a"
+       id="polygon6" />
+    <!-- Front face -->
+    <polygon
+       points="25,24 25,58 0,46 0,12 "
+       fill="#d4943a"
+       id="polygon7" />
+    <!-- Right face -->
+    <polygon
+       points="50,12 50,46 25,58 25,24 "
+       fill="#dba248"
+       id="polygon8" />
+    <!-- Plank lines -->
+    <line
+       x1="12"
+       y1="18"
+       x2="12"
+       y2="51.515625"
+       stroke="#b8802a"
+       stroke-width="0.992851"
+       opacity="0.5"
+       id="line8" />
+    <line
+       x1="37"
+       y1="18.476562"
+       x2="37"
+       y2="52"
+       stroke="#b8802a"
+       stroke-width="0.992967"
+       opacity="0.5"
+       id="line9" />
+    <!-- Cross on front -->
+    <line
+       x1="3.0390849"
+       y1="16.019543"
+       x2="23.316418"
+       y2="56.574207"
+       stroke="#b8802a"
+       stroke-width="1.3874"
+       opacity="0.4"
+       id="line10" />
+    <line
+       x1="19.338169"
+       y1="21.293041"
+       x2="5.6344876"
+       y2="48.700401"
+       stroke="#b8802a"
+       stroke-width="0.937627"
+       opacity="0.4"
+       id="line11" />
+  </g>
+  <!-- Small crate (front-center, on top) -->
+  <g
+     transform="translate(65,30)"
+     id="g16">
+    <!-- Top face -->
+    <polygon
+       points="40,10 20,20 0,10 20,0 "
+       fill="#f7c96b"
+       id="polygon11" />
+    <!-- Front face -->
+    <polygon
+       points="20,20 20,46 0,36 0,10 "
+       fill="#e8a44a"
+       id="polygon12" />
+    <!-- Right face -->
+    <polygon
+       points="40,10 40,36 20,46 20,20 "
+       fill="#edb55a"
+       id="polygon13" />
+    <!-- Plank lines -->
+    <line
+       x1="10"
+       y1="15.265625"
+       x2="10"
+       y2="41"
+       stroke="#c67b2e"
+       stroke-width="0.994879"
+       opacity="0.5"
+       id="line13" />
+    <line
+       x1="30"
+       y1="15.248592"
+       x2="30"
+       y2="40.767982"
+       stroke="#c67b2e"
+       stroke-width="0.990714"
+       opacity="0.5"
+       id="line14" />
+    <!-- Cross on front -->
+    <line
+       x1="2.42398"
+       y1="11.769677"
+       x2="17.509703"
+       y2="44.096226"
+       stroke="#c67b2e"
+       stroke-width="1.29306"
+       opacity="0.4"
+       id="line15" />
+    <line
+       x1="14.857096"
+       y1="17.457657"
+       x2="5.1429043"
+       y2="38.273781"
+       stroke="#c67b2e"
+       stroke-width="0.832646"
+       opacity="0.4"
+       id="line16" />
+  </g>
+  <!-- Tiny tilted crate (fallen to the right) -->
+  <g
+     transform="rotate(-15,395.41534,-450.22402)"
+     id="g19">
+    <!-- Top face -->
+    <polygon
+       points="28,7 14,14 0,7 14,0 "
+       fill="#f7c96b"
+       id="polygon16" />
+    <!-- Front face -->
+    <polygon
+       points="14,14 14,32 0,25 0,7 "
+       fill="#e8a44a"
+       id="polygon17" />
+    <!-- Right face -->
+    <polygon
+       points="28,7 28,25 14,32 14,14 "
+       fill="#edb55a"
+       id="polygon18" />
+    <!-- Cross on front -->
+    <line
+       x1="0.99557519"
+       y1="7.9998622"
+       x2="12.317092"
+       y2="30.642897"
+       stroke="#c67b2e"
+       stroke-width="1.13215"
+       opacity="0.4"
+       id="line18" />
+    <line
+       x1="10.825629"
+       y1="12.390121"
+       x2="3.617017"
+       y2="26.807346"
+       stroke="#c67b2e"
+       stroke-width="0.720861"
+       opacity="0.4"
+       id="line19" />
+    <line
+       x1="21.608366"
+       y1="10.362387"
+       x2="22.107613"
+       y2="27.81711"
+       stroke="#b8802a"
+       stroke-width="0.517222"
+       opacity="0.5"
+       id="line9-6" />
+  </g>
+  <!-- Rust gear icon (small, top-right corner of pile) -->
+  <g
+     transform="translate(89.776367,124.57812)"
+     fill="#a0522d"
+     opacity="0.6"
+     id="g27">
+    <circle
+       cx="10"
+       cy="10"
+       r="5"
+       fill="none"
+       stroke="#a0522d"
+       stroke-width="2"
+       id="circle19" />
+    <circle
+       cx="10"
+       cy="10"
+       r="1.5"
+       id="circle20" />
+    <!-- Gear teeth -->
+    <rect
+       x="8.5"
+       y="1"
+       width="3"
+       height="4"
+       rx="0.5"
+       id="rect20" />
+    <rect
+       x="8.5"
+       y="15"
+       width="3"
+       height="4"
+       rx="0.5"
+       id="rect21" />
+    <rect
+       x="1"
+       y="8.5"
+       width="4"
+       height="3"
+       rx="0.5"
+       id="rect22" />
+    <rect
+       x="15"
+       y="8.5"
+       width="4"
+       height="3"
+       rx="0.5"
+       id="rect23" />
+    <rect
+       x="3"
+       y="3"
+       width="3"
+       height="3"
+       rx="0.5"
+       transform="rotate(45,4.5,4.5)"
+       id="rect24" />
+    <rect
+       x="14"
+       y="3"
+       width="3"
+       height="3"
+       rx="0.5"
+       transform="rotate(45,15.5,4.5)"
+       id="rect25" />
+    <rect
+       x="3"
+       y="14"
+       width="3"
+       height="3"
+       rx="0.5"
+       transform="rotate(45,4.5,15.5)"
+       id="rect26" />
+    <rect
+       x="14"
+       y="14"
+       width="3"
+       height="3"
+       rx="0.5"
+       transform="rotate(45,15.5,15.5)"
+       id="rect27" />
+  </g>
+  <!-- Text -->
+  <text
+     x="99.75"
+     y="154.9375"
+     text-anchor="middle"
+     font-family="monospace, 'Courier New'"
+     font-size="18px"
+     font-weight="bold"
+     fill="#5c3d1a"
+     id="text27">CRATEmPLATE</text>
+</svg>
