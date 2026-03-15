@@ -1,6 +1,10 @@
 {
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
+    linecop = {
+      url = "github:mlavrinenko/linecop";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     naersk = {
       url = "github:nix-community/naersk";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -11,6 +15,7 @@
   outputs =
     {
       flake-utils,
+      linecop,
       naersk,
       nixpkgs,
       ...
@@ -33,7 +38,9 @@
 
         # For `nix develop`:
         devShells.default = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [
+          nativeBuildInputs = [
+            linecop.packages.${system}.default
+          ] ++ (with pkgs; [
             rustc
             cargo
             cargo-tarpaulin
@@ -42,9 +49,7 @@
             just
             nixd
             rust-analyzer
-            tokei
-            jq
-          ];
+          ]);
         };
       }
     );

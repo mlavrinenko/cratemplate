@@ -51,7 +51,7 @@ file-sizes:
 
 # Check for oversized files (fails if any exceed limits)
 check-file-size:
-    tokei --files --output json --exclude archive | jq -rf check-file-size.jq
+    linecop
 
 # Tag a release and push (usage: just release 0.1.0)
 release VERSION:

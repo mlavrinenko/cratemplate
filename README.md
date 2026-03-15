@@ -27,7 +27,7 @@ You'll be prompted for project name, description, and license.
 - Nix flake dev environment (rustc, cargo, clippy, rustfmt, just, rust-analyzer, etc.)
 - `Justfile` with common recipes (`just check`, `just test`, `just cover`, etc.)
 - Code coverage via `cargo-tarpaulin` (70% minimum)
-- File size limits enforced (500 lines for Rust, 200 for Markdown) // but it will be LoC check with `linecop` crate soon.
+- File size limits enforced via [linecop](https://github.com/mlavrinenko/linecop) (500 lines for Rust, 200 for Markdown)
 - `AGENT.md` with rules for LLM coding agents
 
 ## Template maintenance

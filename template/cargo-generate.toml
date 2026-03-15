@@ -1,6 +1,6 @@
 [template]
 cargo_generate_version = ">=0.10.0"
-exclude = ["Justfile", "flake.nix", "rust-toolchain.toml", "clippy.toml", "rustfmt.toml", "tarpaulin.toml", ".envrc", ".gitignore", "check-file-size.jq"]
+exclude = ["Justfile", "flake.nix", "rust-toolchain.toml", "clippy.toml", "rustfmt.toml", "tarpaulin.toml", ".envrc", ".gitignore", ".linecop.yaml"]
 ignore = [".direnv", "flake.lock"]
 
 [placeholders.gh-username]
