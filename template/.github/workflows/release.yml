@@ -7,7 +7,22 @@ on:
 permissions:
   contents: write
 
+env:
+  BINARY_NAME: "" # set dynamically in the 'name' step
+
 jobs:
+  name:
+    name: Detect binary name
+    runs-on: ubuntu-latest
+    outputs:
+      binary: ${{ steps.meta.outputs.binary }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: |
+          name=$(sed -n 's/^name = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          echo "binary=$name" >> "$GITHUB_OUTPUT"
+
   check:
     name: Check
     runs-on: ubuntu-latest
@@ -22,12 +37,15 @@ jobs:
 
       - uses: extractions/setup-just@v2
 
+      - name: Install tools
+        run: cargo install cargo-machete linecop
+
       - name: Check
         run: just check
 
   build:
     name: Build (${{ matrix.target }})
-    needs: check
+    needs: [check, name]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -40,6 +58,8 @@ jobs:
             os: macos-latest
           - target: aarch64-apple-darwin
             os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -62,14 +82,18 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Rename binary
-        run: |
-          cp target/${{ matrix.target }}/release/{{project-name}} {{project-name}}-${{ matrix.target }}
+      - name: Rename binary (unix)
+        if: runner.os != 'Windows'
+        run: cp target/${{ matrix.target }}/release/${{ needs.name.outputs.binary }} ${{ needs.name.outputs.binary }}-${{ matrix.target }}
+
+      - name: Rename binary (windows)
+        if: runner.os == 'Windows'
+        run: cp target/${{ matrix.target }}/release/${{ needs.name.outputs.binary }}.exe ${{ needs.name.outputs.binary }}-${{ matrix.target }}.exe
 
       - uses: actions/upload-artifact@v4
         with:
-          name: {{project-name}}-${{ matrix.target }}
-          path: {{project-name}}-${{ matrix.target }}
+          name: ${{ needs.name.outputs.binary }}-${{ matrix.target }}
+          path: ${{ needs.name.outputs.binary }}-${{ matrix.target }}*
 
   publish:
     name: Publish to crates.io
@@ -90,7 +114,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [build, publish]
+    needs: [name, build, publish]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -101,4 +125,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: {{project-name}}-*
+          files: ${{ needs.name.outputs.binary }}-*
