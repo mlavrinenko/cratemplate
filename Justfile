@@ -29,24 +29,8 @@ validate:
     # Run all checks inside the generated project's own devShell
     nix develop --command bash -c '
         set -euo pipefail
-        step() { echo "--- $1"; }
-
-        step "Checking format"
-        cargo fmt --all -- --check
-
-        step "Running clippy"
-        cargo clippy --workspace --all-targets -q -- -D warnings
-
-        step "Running tests"
-        cargo test --workspace -q
-
-        step "Building"
-        cargo build --workspace -q
-
-        step "Checking file sizes"
-        just check-file-size
-
-        step "Checking coverage"
+        just check
+        just build
         just cover
     '
 
