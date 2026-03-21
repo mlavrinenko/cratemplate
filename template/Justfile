@@ -1,16 +1,17 @@
-# Development recipes
+set quiet := true
 
 # List available recipes
 default:
     @just --list
 
-# Run all checks (fmt + clippy + tests + unused deps + file size)
+# Run all checks in parallel (fmt + clippy + tests + unused deps + file size)
 check:
-    just fmt-check
-    cargo clippy --workspace --all-targets -q -- -D warnings
-    cargo test --workspace -q
-    just machete
-    just check-file-size
+    parallel -j 0 -- \
+        "chronic just fmt-check" \
+        "chronic cargo clippy --workspace --all-targets -q -- -D warnings" \
+        "chronic cargo test --workspace -q" \
+        "chronic just machete" \
+        "chronic just check-file-size"
 
 # Run tests only
 test *ARGS:
