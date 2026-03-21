@@ -35,6 +35,9 @@ jobs:
 
       - uses: extractions/setup-just@v2
 
+      - name: Install tools
+        run: cargo install cargo-machete linecop
+
       - name: Format check
         run: just fmt-check
 
