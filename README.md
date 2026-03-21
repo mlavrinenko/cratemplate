@@ -28,6 +28,7 @@ You'll be prompted for project name, description, and license.
 - `Justfile` with common recipes (`just check`, `just test`, `just cover`, etc.)
 - Code coverage via `cargo-tarpaulin` (70% minimum)
 - File size limits enforced via [linecop](https://github.com/mlavrinenko/linecop) (500 lines for Rust, 200 for Markdown)
+- `ejectest` for inline tests extraction
 - `AGENT.md` with rules for LLM coding agents
 
 ## Template maintenance
