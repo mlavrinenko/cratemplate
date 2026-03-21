@@ -4,11 +4,12 @@
 default:
     @just --list
 
-# Run all checks (fmt + clippy + tests + file size)
+# Run all checks (fmt + clippy + tests + unused deps + file size)
 check:
     just fmt-check
     cargo clippy --workspace --all-targets -q -- -D warnings
     cargo test --workspace -q
+    just machete
     just check-file-size
 
 # Run tests only
@@ -38,6 +39,10 @@ fmt:
 # Format check (CI-friendly)
 fmt-check:
     cargo fmt --all -- --check
+
+# Check for unused dependencies
+machete:
+    cargo machete
 
 # Count tests across workspace
 count-tests:

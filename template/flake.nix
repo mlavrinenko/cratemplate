@@ -43,6 +43,7 @@
           ] ++ (with pkgs; [
             rustc
             cargo
+            cargo-machete
             cargo-tarpaulin
             clippy
             rustfmt
