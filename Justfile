@@ -15,7 +15,7 @@ validate:
     step() { echo "--- $1"; }
 
     step "Generating project from template"
-    nix shell nixpkgs#cargo-generate --command \
+    nix shell nixpkgs#cargo-generate nixpkgs#cargo --command \
         cargo generate --path "$TEMPLATE_DIR/template" \
             --destination "$WORK_DIR" \
             --name "$PROJECT_NAME" \

@@ -4,6 +4,9 @@ set quiet := true
 default:
     @just --list
 
+# Run fixes, then other checks
+fix-check: fmt clippy-fix check
+
 # Run all checks in parallel (fmt + clippy + tests + unused deps + file size)
 check:
     parallel -j 0 -- \
