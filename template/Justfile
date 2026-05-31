@@ -24,9 +24,9 @@ test *ARGS:
 clippy:
     cargo clippy --workspace --all-targets -q -- -D warnings
 
-# Auto-fix clippy warnings
+# Auto-fix clippy warnings (allow-dirty/-staged: fix-check runs pre-commit, tree is dirty)
 clippy-fix:
-    cargo clippy --fix --workspace --all-targets -- -D warnings
+    cargo clippy --fix --workspace --all-targets --allow-dirty --allow-staged -- -D warnings
 
 # Build the project
 build:
