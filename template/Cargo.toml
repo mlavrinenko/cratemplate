@@ -11,7 +11,7 @@ license = "{{license}}"
 repository = "https://github.com/{{gh-username}}/{{project-name}}"
 keywords = []
 categories = ["command-line-utilities"]
-include = ["/src/", "/LICENSE*", "/README.md"]
+include = ["/src/", "/LICENSE*", "/README.md", "/CHANGELOG.md"]
 
 [lib]
 name = "{{crate_name}}"

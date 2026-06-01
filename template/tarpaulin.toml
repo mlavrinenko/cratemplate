@@ -1,7 +1,7 @@
 [test_config]
 workspace = true
 skip-clean = true
-exclude-files = ["src/main.rs"]
+exclude-files = ["src/main.rs", "var/*"]
 
 [report]
 fail-under = 70
