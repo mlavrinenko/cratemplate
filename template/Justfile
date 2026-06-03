@@ -29,8 +29,8 @@ clippy-fix:
     cargo clippy --fix --workspace --all-targets --allow-dirty --allow-staged -- -D warnings
 
 # Build the project
-build:
-    cargo build --workspace -q
+build *args:
+    cargo build --workspace -q {{ args }}
 
 # Run coverage with tarpaulin
 cover:
