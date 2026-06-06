@@ -5,7 +5,7 @@ default:
     @just --list
 
 # Run fixes, then other checks
-fix-check: fmt clippy-fix check
+fix-check: eject fmt clippy-fix check
 
 # Run all checks in parallel (fmt + clippy + tests + unused deps + file size + drift)
 check:
@@ -71,6 +71,11 @@ count-tests:
 file-sizes:
     #!/usr/bin/env bash
     find . -type f \( -name '*.rs' -o -name '*.md' \) ! -path './target/*' -exec wc -l {} + | sort -rn | head -20
+
+# Eject inline tests from Rust files nearing the linecop limit, so they stay
+# under it without losing the inline-test workflow. Runs as part of `fix-check`.
+eject PCT='90':
+    linecop --baseline {{ PCT }} --format paths | ejectest apply src --files-from - --lenient
 
 # Check for oversized files (fails if any exceed limits)
 check-file-size:
