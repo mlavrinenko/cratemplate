@@ -29,6 +29,16 @@ coverage, so anything there is untested by default.
 Minimum 70% coverage enforced via `cargo-tarpaulin`. Run `just cover` to check.
 `main.rs` is excluded — keep it thin and move testable logic to `lib.rs`.
 
+## CRAP Gate
+
+`just crap` scores each function by the Change Risk Anti-Patterns metric
+(cyclomatic complexity weighted by test coverage) and fails above 30. A global
+coverage threshold can stay green while one branchy, untested function rots;
+CRAP catches that. It reads `target/coverage/lcov.info`, so run `just cover`
+first (CI and `just validate` chain them). Fix a flagged function by adding
+tests or reducing its branching. Tune the threshold per repo via `--threshold`
+or a `.cargo-crap.toml`.
+
 ## File Size Limits
 
 - Rust files: 500 lines max

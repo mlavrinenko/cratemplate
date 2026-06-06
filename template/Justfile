@@ -41,9 +41,14 @@ clippy-fix:
 build *args:
     cargo build --workspace -q {{ args }}
 
-# Run coverage with tarpaulin
+# Run coverage with tarpaulin (also writes target/coverage/lcov.info)
 cover:
     cargo tarpaulin --workspace --skip-clean
+
+# Gate complex, undertested functions via CRAP metric. Needs lcov from `just
+# cover` first. Threshold 30 is a sane greenfield default; tune per repo.
+crap:
+    cargo crap --lcov target/coverage/lcov.info --workspace --exclude 'src/main.rs' --threshold 30 --fail-above
 
 # Format code
 fmt:

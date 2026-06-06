@@ -40,3 +40,9 @@ jobs:
 
       - name: Coverage (fails under 70%)
         run: nix develop --command just cover
+
+      # CRAP metric: fails if a function is both complex and undertested,
+      # which a global coverage threshold can hide. Consumes the lcov that
+      # `just cover` wrote.
+      - name: CRAP gate (fails above 30)
+        run: nix develop --command just crap

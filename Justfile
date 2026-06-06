@@ -35,6 +35,7 @@ validate:
         just check
         just build
         just cover
+        just crap
     '
 
     echo ""

@@ -6,3 +6,6 @@ exclude-files = ["src/main.rs", "var/*"]
 [report]
 fail-under = 70
 output-dir = "target/coverage"
+# Stdout keeps the local summary; Lcov writes target/coverage/lcov.info for
+# `just crap` (CRAP metric gate) to consume.
+out = ["Stdout", "Lcov"]
