@@ -10,6 +10,8 @@ permissions:
 env:
   BINARY_NAME: "" # set dynamically in the 'name' step
 
+# Actions are pinned: first-party actions to immutable release tags, third-party
+# actions to commit SHAs. Bump them with Dependabot's `github-actions` ecosystem.
 jobs:
   name:
     name: Detect binary name
@@ -17,7 +19,7 @@ jobs:
     outputs:
       binary: ${{ steps.meta.outputs.binary }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.3
       - id: meta
         run: |
           name=$(sed -n 's/^name = "\(.*\)"/\1/p' Cargo.toml | head -1)
@@ -35,9 +37,17 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: actions/checkout@v6.0.3
+      - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+      - uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/flake.lock', '**/*.nix') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 5G
+          purge: true
+          purge-prefixes: nix-${{ runner.os }}-
+          purge-created: 0
+          purge-primary-key: never
 
       - name: Check
         run: nix develop --command just check
@@ -61,13 +71,17 @@ jobs:
             os: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.3
 
-      - uses: dtolnay/rust-toolchain@stable
+      # Cross-platform release binaries are built with rustup rather than Nix
+      # (Nix on the Windows/macOS runners is impractical). Pinned to a commit, so
+      # the channel must be given explicitly; it tracks rust-toolchain.toml.
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # stable channel pinned below
         with:
+          toolchain: stable
           targets: ${{ matrix.target }}
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2.9.1
         with:
           key: ${{ matrix.target }}
 
@@ -89,25 +103,29 @@ jobs:
         if: runner.os == 'Windows'
         run: cp target/${{ matrix.target }}/release/${{ needs.name.outputs.binary }}.exe ${{ needs.name.outputs.binary }}-${{ matrix.target }}.exe
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: ${{ needs.name.outputs.binary }}-${{ matrix.target }}
           path: ${{ needs.name.outputs.binary }}-${{ matrix.target }}*
 
   publish:
     name: Publish to crates.io
-    needs: [check, name]
+    # Depends on build so a failed target stops the (irreversible) crates.io push.
+    needs: [check, name, build]
     runs-on: ubuntu-latest
     environment: crates-io
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.3
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # stable channel pinned below
+        with:
+          toolchain: stable
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2.9.1
 
+      # `--locked` keeps the published build reproducible; requires a committed Cargo.lock.
       - name: Publish
-        run: cargo publish
+        run: cargo publish --locked
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
@@ -116,12 +134,12 @@ jobs:
     needs: [name, build, publish]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8.0.1
         with:
           merge-multiple: true
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.0
         with:
           generate_release_notes: true
           files: ${{ needs.name.outputs.binary }}-*
