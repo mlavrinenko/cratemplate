@@ -24,6 +24,18 @@ Keep `main.rs` as a thin entry point — argument parsing, logger init, and a ca
 library code. All logic belongs in `lib.rs` (and its modules). `main.rs` is excluded from
 coverage, so anything there is untested by default.
 
+## Testing
+
+- Unit tests live inline in a `#[cfg(test)] mod tests` block next to the code they exercise.
+- CLI and integration tests live in `tests/` and drive the built binary with
+  [`assert_cmd`](https://docs.rs/assert_cmd) + [`predicates`](https://docs.rs/predicates)
+  (see `tests/cli.rs`).
+- Run the full suite with `just test`.
+- As a file approaches the linecop limit, `just fix-check` ejects its inline
+  `#[cfg(test)]` module into a sibling `_tests.rs` file via
+  [ejectest](https://github.com/mlavrinenko/ejectest), driven by `linecop --baseline`.
+  This keeps source files under the limit without losing the inline-test workflow.
+
 ## Code Coverage
 
 Minimum 70% coverage enforced via `cargo-tarpaulin`. Run `just cover` to check.

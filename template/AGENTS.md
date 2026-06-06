@@ -4,6 +4,7 @@
 
 - See and use [Justfile](Justfile). Add any repeatable and regular operations there.
 - At the end ensure that `just fix-check` is green.
+- Tests: inline `#[cfg(test)]` units; CLI/integration in `tests/` (`assert_cmd` + `predicates`). `just fix-check` auto-ejects inline tests from oversized files via `ejectest`.
 - Coverage and CRAP gates run separately (CI + `just validate`): `just cover`
   then `just crap`. If `just crap` flags a function, add tests or reduce its
   branching — don't raise the threshold to dodge it.
