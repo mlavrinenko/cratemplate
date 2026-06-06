@@ -9,6 +9,10 @@
       url = "github:mlavrinenko/linecop";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    outdatty = {
+      url = "github:mlavrinenko/outdatty";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     naersk = {
       url = "github:nix-community/naersk";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -21,6 +25,7 @@
       ejectest,
       flake-utils,
       linecop,
+      outdatty,
       naersk,
       nixpkgs,
       ...
@@ -46,6 +51,7 @@
           nativeBuildInputs = [
             ejectest.packages.${system}.default
             linecop.packages.${system}.default
+            outdatty.packages.${system}.default
           ] ++ (with pkgs; [
             rustc
             cargo

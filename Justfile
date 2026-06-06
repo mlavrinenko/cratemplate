@@ -26,9 +26,12 @@ validate:
     cd "$WORK_DIR/$PROJECT_NAME"
     git add -A
 
-    # Run all checks inside the generated project's own devShell
+    # Run all checks inside the generated project's own devShell. The one-time
+    # `outdatty-update` mirrors the post-generation bootstrap: it writes the
+    # initial outdatty.lock so the drift check in `just check` has a baseline.
     nix develop --command bash -c '
         set -euo pipefail
+        just outdatty-update
         just check
         just build
         just cover
