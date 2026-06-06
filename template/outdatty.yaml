@@ -31,3 +31,4 @@ groups:
       - Justfile
     dependents:
       - CONTRIBUTING.md
+      - AGENTS.md
