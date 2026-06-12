@@ -36,6 +36,23 @@ validate:
         just build
         just cover
         just crap
+
+        # Prove sccache is actually wired in via .cargo/config.toml. `just build`
+        # above populated the cache; zero the counters, wipe the local target,
+        # and rebuild from scratch. sccache should serve those compilations from
+        # its store, so cache hits must be > 0. A missing or no-op rustc-wrapper
+        # would report zero hits and fail this gate.
+        echo "--- Verifying sccache serves compilations"
+        sccache --zero-stats >/dev/null
+        cargo clean
+        cargo build --workspace -q
+        sccache --show-stats
+        hits=$(sccache --show-stats | awk "/^Cache hits[[:space:]]+[0-9]/ {print \$3; exit}")
+        if [ "${hits:-0}" -lt 1 ]; then
+            echo "error: sccache reported no cache hits; rustc-wrapper not effective" >&2
+            exit 1
+        fi
+        echo "sccache cache hits after clean rebuild: $hits"
     '
 
     echo ""

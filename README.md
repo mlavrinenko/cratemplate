@@ -39,7 +39,7 @@ You'll be prompted for project name, GitHub username, description, and license.
 - `anyhow` + `thiserror` for errors, `clap` 4 for CLI, `log` + `env_logger`
 
 **Nix dev environment**
-- Flake with `nix develop` (rustc, cargo, clippy, rustfmt, just, rust-analyzer, nixd, ...)
+- Flake with `nix develop` (rustc, cargo, clippy, rustfmt, just, rust-analyzer, nixd, sccache, ...)
 - `direnv` / `.envrc` for automatic shell activation
 - `Justfile` with common recipes (`just check`, `just test`, `just cover`, `just crap`, ...)
 

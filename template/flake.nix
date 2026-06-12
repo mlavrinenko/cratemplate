@@ -79,6 +79,7 @@
             moreutils
             nixd
             rust-analyzer
+            sccache
           ]);
         };
       }
