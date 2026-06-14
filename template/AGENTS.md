@@ -12,5 +12,6 @@
 - [outdatty.yaml](outdatty.yaml) couples sources to dependents. When `just check`
   reports drift, update the listed dependents, then run `just outdatty-update`
   to re-confirm. Add a group whenever you introduce files that must stay in sync.
+- Eating your own dog food: the tool should use itself if applicable.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for project conventions and code standards.
