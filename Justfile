@@ -37,11 +37,20 @@ validate:
         just cover
         just crap
 
-        # Prove sccache is actually wired in via .cargo/config.toml. `just build`
-        # above populated the cache; zero the counters, wipe the local target,
-        # and rebuild from scratch. sccache should serve those compilations from
-        # its store, so cache hits must be > 0. A missing or no-op rustc-wrapper
-        # would report zero hits and fail this gate.
+        # Package build must succeed in a clean sandbox (no dev shell, no
+        # sccache). Catches a committed .cargo/config.toml — or any other
+        # dev-only setting — leaking into `nix build` and breaking downstream
+        # flake consumers. Stage first: flakes filter the source to git-tracked
+        # files, and naersk needs the Cargo.lock that `just build` just wrote.
+        echo "--- Verifying nix build (package) in a clean sandbox"
+        git add -A
+        nix build .#default
+
+        # Prove sccache is actually wired in via the dev shell RUSTC_WRAPPER.
+        # `just build` above populated the cache; zero the counters, wipe the
+        # local target, and rebuild from scratch. sccache should serve those
+        # compilations from its store, so cache hits must be > 0. A missing or
+        # no-op rustc-wrapper would report zero hits and fail this gate.
         echo "--- Verifying sccache serves compilations"
         sccache --zero-stats >/dev/null
         cargo clean

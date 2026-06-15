@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Generated projects no longer fail `nix build`. The `rustc-wrapper = "sccache"`
+  dev speedup moved from a committed `.cargo/config.toml` (which naersk vendored
+  into the sandboxed package build, where sccache is absent) to the flake dev
+  shell's `RUSTC_WRAPPER`. `just validate` now also runs `nix build` so this
+  class of package-build regression is caught.
+
 ### Added
 
 - CRAP metric gate (`cargo-crap`): fails when a function is both complex and
