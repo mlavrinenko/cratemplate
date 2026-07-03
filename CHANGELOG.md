@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Dropped the `sccache` rustc-wrapper from the template dev shell and its
+  `just validate` gate. Rust caching is now expected from a system-wide wrapper
+  (e.g. kache set via `RUSTC_WRAPPER` in the host session), which the dev shell
+  inherits; pinning a per-project wrapper is redundant and would override it.
+  The clean-sandbox `nix build` check in `just validate` is retained.
+
 ### Fixed
 
 - Generated projects no longer fail `nix build`. The `rustc-wrapper = "sccache"`
