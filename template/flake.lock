@@ -1549,11 +1549,11 @@
         "outdatty": "outdatty_2"
       },
       "locked": {
-        "lastModified": 1783099447,
-        "narHash": "sha256-WgjET6tjPdvdMnJC9vFScZH2lzWfVrC+0Vi0Ylr4ync=",
+        "lastModified": 1783108794,
+        "narHash": "sha256-cM8EfDZ7s87ISGt+dZgKzvTDQbeWqV6L+cFMidFR2PU=",
         "owner": "mlavrinenko",
         "repo": "qahq",
-        "rev": "abd2f997520f76f53230efdeaf3b0ff9583b3f5c",
+        "rev": "c520b7d642ff43c5b755bf89fef693bcb7ac2185",
         "type": "github"
       },
       "original": {
