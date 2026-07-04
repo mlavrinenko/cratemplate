@@ -33,8 +33,12 @@ test *ARGS:
 clippy:
     cargo clippy --workspace --all-targets -q -- -D warnings
 
-# Auto-fix clippy warnings (allow-dirty/-staged: fix-check runs pre-commit, tree is dirty)
+# Auto-fix clippy warnings (allow-dirty/-staged: fix-check runs pre-commit, tree is dirty).
+# Restore write on target/ first: tarpaulin (`just cover`/`just crap`) leaves *.rmeta
+# artifacts read-only, and `clippy --fix` then aborts with "output file ... is not
+# writeable". Cheap self-heal so `fix-check` after `cover`/`crap` never trips on it.
 clippy-fix:
+    chmod -R u+w target 2>/dev/null || true
     cargo clippy --fix --workspace --all-targets --allow-dirty --allow-staged -- -D warnings
 
 # Build the project
