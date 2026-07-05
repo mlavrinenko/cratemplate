@@ -16,11 +16,16 @@
   <p>{{description}}</p>
 
   <h2>Install</h2>
+  {% if crate_kind == "bin" %}
   <pre><code>cargo install {{project-name}}</code></pre>
 
   <p>Or download a binary from the
     <a href="https://github.com/{{gh-username}}/{{project-name}}/releases/latest">latest release</a>.
   </p>
+  {% endif %}
+  {% if crate_kind == "lib" %}
+  <pre><code>cargo add {{crate_name}}</code></pre>
+  {% endif %}
 
   <footer>
     <p><a href="https://github.com/{{gh-username}}/{{project-name}}">GitHub</a></p>

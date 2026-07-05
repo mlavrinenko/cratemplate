@@ -15,13 +15,17 @@ validate:
     step() { echo "--- $1"; }
 
     step "Generating project from template"
+    # --define crate_kind=bin pins the choice explicitly: without it,
+    # cargo-generate prompts interactively for the crate_kind placeholder and
+    # this script has no TTY, so it would fail with "IO error: not a terminal".
     nix shell nixpkgs#cargo-generate nixpkgs#cargo --command \
         cargo generate --path "$TEMPLATE_DIR/template" \
             --destination "$WORK_DIR" \
             --name "$PROJECT_NAME" \
             --define "description=Validation test project" \
             --define "license=MIT" \
-            --define "gh-username=testuser"
+            --define "gh-username=testuser" \
+            --define "crate_kind=bin"
 
     cd "$WORK_DIR/$PROJECT_NAME"
     git add -A

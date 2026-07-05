@@ -1,6 +1,6 @@
 [template]
 cargo_generate_version = ">=0.10.0"
-exclude = ["Justfile", "flake.nix", "rust-toolchain.toml", "clippy.toml", "rustfmt.toml", "tarpaulin.toml", ".envrc", ".gitignore", ".linecop.yaml", ".github/workflows/ci.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml"]
+exclude = ["Justfile", "flake.nix", "rust-toolchain.toml", "clippy.toml", "rustfmt.toml", "tarpaulin.toml", ".envrc", ".gitignore", ".linecop.yaml", ".github/workflows/ci.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml", ".github/workflows/release-lib.yml"]
 ignore = [".direnv", "flake.lock"]
 
 [placeholders.gh-username]
@@ -18,6 +18,18 @@ prompt = "License?"
 choices = ["MIT", "Apache-2.0", "MIT OR Apache-2.0", "GPL-3.0"]
 default = "MIT"
 
+# NOTE: underscore, not hyphen. cargo-generate's `[conditional]` expressions
+# are parsed by evalexpr, which reads a bare `-` as subtraction — a hyphenated
+# placeholder name silently fails to match in `[conditional.'...']` sections
+# (no error, the branch is just never taken) while still working fine inside
+# `{{ }}`/`{% %}` Liquid substitution in file content. Verified empirically
+# against cargo-generate 0.23.9; keep this placeholder underscored.
+[placeholders.crate_kind]
+type = "string"
+prompt = "Crate kind?"
+choices = ["lib", "bin"]
+default = "bin"
+
 # Conditional license file inclusion
 [conditional.'license == "MIT"']
 ignore = ["LICENSE-APACHE", "LICENSE-GPL"]
@@ -30,3 +42,13 @@ ignore = ["LICENSE-GPL"]
 
 [conditional.'license == "GPL-3.0"']
 ignore = ["LICENSE-MIT", "LICENSE-APACHE"]
+
+# Conditional crate-kind file inclusion: a lib has no binary entry point or CLI
+# integration tests, and ships the lib-only release workflow (guard + check +
+# publish, no build matrix). A bin keeps main.rs/tests/cli.rs and the existing
+# cross-platform build + release workflow.
+[conditional.'crate_kind == "lib"']
+ignore = ["src/main.rs", "tests/cli.rs", ".github/workflows/release.yml"]
+
+[conditional.'crate_kind == "bin"']
+ignore = [".github/workflows/release-lib.yml"]

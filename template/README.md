@@ -8,6 +8,7 @@
 
 ## Install
 
+{% if crate_kind == "bin" %}
 ### From crates.io
 
 ```bash
@@ -18,12 +19,25 @@ cargo install {{project-name}}
 
 Download a pre-built binary from the
 [latest release](https://github.com/{{gh-username}}/{{project-name}}/releases/latest).
+{% endif %}
+{% if crate_kind == "lib" %}
+```bash
+cargo add {{crate_name}}
+```
+{% endif %}
 
 ## Usage
 
+{% if crate_kind == "bin" %}
 ```bash
 {{project-name}}
 ```
+{% endif %}
+{% if crate_kind == "lib" %}
+```rust
+{{crate_name}}::greet("world")?;
+```
+{% endif %}
 
 ## Development
 

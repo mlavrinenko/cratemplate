@@ -4,7 +4,12 @@
 
 - See and use [Justfile](Justfile). Add any repeatable and regular operations there.
 - At the end ensure that `just fix-check` is green.
+{% if crate_kind == "bin" %}
 - Tests: inline `#[cfg(test)]` units; CLI/integration in `tests/` (`assert_cmd` + `predicates`). `just fix-check` auto-ejects inline tests from oversized files via `ejectest`.
+{% endif %}
+{% if crate_kind == "lib" %}
+- Tests: inline `#[cfg(test)]` units next to the code they exercise; add `tests/` integration tests for public-API behaviour that spans modules. `just fix-check` auto-ejects inline tests from oversized files via `ejectest`.
+{% endif %}
 - Coverage and CRAP gates run separately (CI + `just validate`): `just cover`
   then `just crap`. If `just crap` flags a function, add tests or reduce its
   branching — don't raise the threshold to dodge it.
