@@ -5,12 +5,15 @@
 # record the new state; `just outdatty-check` (part of `just check`) fails until
 # you do. Tune these groups to match where your project's coupled files live.
 groups:
-  # The CLI surface (commands, flags, behaviour) is documented by hand. Touching
-  # the code flags the user-facing docs as needing a look.
-  - name: cli-docs
+  # The public surface (CLI for a bin, the library API for a lib) is
+  # documented by hand. Touching the code flags the user-facing docs as
+  # needing a look. src/main.rs only exists for crate_kind == "bin".
+  - name: {% if crate_kind == "bin" %}cli-docs{% else %}api-docs{% endif %}
     source:
-      - src/main.rs
       - src/lib.rs
+{%- if crate_kind == "bin" %}
+      - src/main.rs
+{%- endif %}
     dependents:
       - README.md
       - www/index.html
