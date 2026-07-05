@@ -14,36 +14,37 @@ Key restrictions:
 
 ## Error Handling
 
-{% if crate_kind == "bin" %}
+{% if crate_kind == "bin" -%}
 - Use `anyhow::Result` for application-level code (binaries, CLI)
-{% endif %}
+{% endif -%}
 - Use `thiserror::Error` for library error types that callers will match on
 - Propagate errors with `?` — never `unwrap()` or `expect()`
 
 ## Project Structure
+{%- if crate_kind == "bin" %}
 
-{% if crate_kind == "bin" %}
 Keep `main.rs` as a thin entry point — argument parsing, logger init, and a call into
 library code. All logic belongs in `lib.rs` (and its modules). `main.rs` is excluded from
 coverage, so anything there is untested by default.
-{% endif %}
-{% if crate_kind == "lib" %}
+{%- endif %}
+{%- if crate_kind == "lib" %}
+
 All logic belongs in `lib.rs` (and its modules). Keep the public API surface small and
 documented; anything callers depend on should have a doc comment with a `# Errors` section
 where relevant.
-{% endif %}
+{%- endif %}
 
 ## Testing
 
 - Unit tests live inline in a `#[cfg(test)] mod tests` block next to the code they exercise.
-{% if crate_kind == "bin" %}
+{% if crate_kind == "bin" -%}
 - CLI and integration tests live in `tests/` and drive the built binary with
   [`assert_cmd`](https://docs.rs/assert_cmd) + [`predicates`](https://docs.rs/predicates)
   (see `tests/cli.rs`).
-{% endif %}
-{% if crate_kind == "lib" %}
+{% endif -%}
+{% if crate_kind == "lib" -%}
 - Integration tests that exercise the public API across modules live in `tests/`.
-{% endif %}
+{% endif -%}
 - Run the full suite with `just test`.
 - As a file approaches the linecop limit, `just fix-check` ejects its inline
   `#[cfg(test)]` module into a sibling `_tests.rs` file via
@@ -53,9 +54,9 @@ where relevant.
 ## Code Coverage
 
 Minimum 70% coverage enforced via `cargo-tarpaulin`. Run `just cover` to check.
-{% if crate_kind == "bin" %}
+{%- if crate_kind == "bin" %}
 `main.rs` is excluded — keep it thin and move testable logic to `lib.rs`.
-{% endif %}
+{%- endif %}
 
 ## CRAP Gate
 

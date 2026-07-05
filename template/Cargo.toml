@@ -16,25 +16,28 @@ include = ["/src/", "/LICENSE*", "/README.md", "/CHANGELOG.md"]
 [lib]
 name = "{{crate_name}}"
 path = "src/lib.rs"
-{% if crate_kind == "bin" %}
+{%- if crate_kind == "bin" %}
+
 [[bin]]
 name = "{{project-name}}"
 path = "src/main.rs"
-{% endif %}
+{%- endif %}
 
 [dependencies]
 thiserror = "2"
 log = "0.4"
-{% if crate_kind == "bin" %}
+{%- if crate_kind == "bin" %}
+
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 env_logger = "0.11"
-{% endif %}
-{% if crate_kind == "bin" %}
+{%- endif %}
+{%- if crate_kind == "bin" %}
+
 [dev-dependencies]
 assert_cmd = "2"
 predicates = "3"
-{% endif %}
+{%- endif %}
 
 [profile.release]
 strip = true
