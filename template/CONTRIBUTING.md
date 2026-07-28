@@ -86,6 +86,38 @@ After editing a source, review the listed dependents, update them as needed, the
 run `just outdatty-update` to record the new state into `outdatty.lock` and commit
 it. Add or adjust groups whenever you introduce files that must move together.
 
+## Memoized Gates
+
+Every arm of `just check` runs as `just mmz <subgate>`, which is
+`mmz just <subgate>`. [mmz](https://github.com/mlavrinenko/mmz) hashes the rule's
+declared inputs and skips the command when they are byte-for-byte identical to
+the last run that *succeeded*, so a no-op `just check` re-run costs nothing and a
+one-file change re-runs only the arms that declare that file.
+
+Rules and their input scopes live in [.mmz/config.yaml](.mmz/config.yaml). Things
+worth knowing:
+
+- Adding an arm to `just check` means adding its rule to that manifest. mmz's
+  default `strict` setting rejects an invocation matching no rule (and one whose
+  rule resolves to zero files), so a missing rule is an error, not a silent pass.
+- Rule names match by prefix on whole argv tokens. `just test` is `match: exact`
+  so a filtered `just test <filter>` can never record the full-suite identity.
+- Rules tagged `gate` are the gate set: `mmz --is-fresh --tag gate` asserts every
+  one already passed against this worktree and runs nothing, which is the check
+  to wire into a pre-push hook or a task tracker's close gate. `just cover` and
+  `just crap` are untagged — memoized, but never blocking.
+- There is no `--force`. To re-run a fresh rule, touch one of its inputs or
+  delete its record under `.mmz/cache/` (gitignored via `.mmz/.gitignore`).
+- `mmz --status` prints every rule's freshness as a table.
+
+## Git Hooks
+
+`just install-hooks` writes a `pre-commit` hook that runs `just check` in the
+flake dev shell. Running the full gate per commit is affordable precisely because
+of the memoization above: a commit that changes nothing a gate reads skips every
+arm. Hooks are not tracked by git, so run the recipe once per clone; bypass a
+single commit with `git commit --no-verify`.
+
 ## Submitting Changes
 
 1. Run `just check` before submitting — it runs clippy, tests, file size, and drift checks

@@ -37,6 +37,21 @@ validate:
         set -euo pipefail
         just outdatty-update
         just check
+
+        # The gate wiring itself: a second `just check` must be a full cache
+        # hit, and `mmz --is-fresh --tag gate` must then assert every arm
+        # passed while running none. Both fail loudly if an arm of `just check`
+        # has no rule in .mmz/config.yaml (mmz refuses an unmatched command) or
+        # if a rule declares inputs the recipe rewrites as it runs.
+        echo "--- Verifying memoized gates (mmz)"
+        just check
+        mmz --is-fresh --tag gate
+
+        # The pre-commit hook the generated project ships must install and be
+        # executable; its body is what `just check` above already proved.
+        just install-hooks
+        test -x "$(git rev-parse --git-path hooks/pre-commit)"
+
         just build
         just cover
         just crap

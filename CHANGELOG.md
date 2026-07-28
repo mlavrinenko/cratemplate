@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Memoized gates via [mmz](https://github.com/mlavrinenko/mmz). Every arm of
+  `just check` now runs as `just mmz <subgate>` (i.e. `mmz just <subgate>`), so
+  an arm whose declared inputs are unchanged since it last passed is skipped;
+  the rules, input scopes and the `gate` tag live in a shipped
+  `.mmz/config.yaml`. `chronic` is gone from `just check`: a hit prints one
+  quiet `on_hit` line, a miss streams the recipe's real output, and a failure
+  is readable where it happens instead of needing a bare re-run.
+- `just install-hooks`: writes a `pre-commit` hook that runs `just check` inside
+  the flake dev shell (via `direnv exec`, falling back to `nix develop`).
+  Gating every commit on the full suite is affordable only because of the
+  memoization above.
+- `.mmz/config.yaml` is an `outdatty` `dev-docs` source, so a change to what
+  the gates read flags `CONTRIBUTING.md`/`AGENTS.md` for review.
+
+### Changed
+
+- `just fix-check` now runs `clippy-fix` before `fmt`: a clippy autofix can land
+  unformatted, so formatting has to come after it for the trailing `check` to
+  stay green.
+- The template dev shell takes `mmz` as a direct flake input rather than through
+  `qahq`, whose pin (v0.3.0) predates the `tags:` the manifest uses.
+- Bumped the `qahq` input (it now also carries `jscpd`).
+- `just validate` additionally asserts the gate wiring: a second `just check`,
+  then `mmz --is-fresh --tag gate`, then `just install-hooks` producing an
+  executable hook. An arm of `just check` with no rule in `.mmz/config.yaml`
+  now fails template validation instead of shipping.
+
 ### Removed
 
 - Dropped the `sccache` rustc-wrapper from the template dev shell and its

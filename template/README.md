@@ -47,6 +47,7 @@ Prerequisites: [Nix](https://nixos.org/) with flakes enabled.
 
 ```bash
 direnv allow         # or: nix develop
+just install-hooks   # pre-commit hook running the (memoized) gate
 
 just check           # fmt + clippy + tests + file-size + drift check
 just build

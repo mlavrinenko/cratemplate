@@ -27,11 +27,13 @@ groups:
       - CHANGELOG.md
 
   # The dev tooling and conventions documented for contributors track the
-  # files that define them.
+  # files that define them: the dev shell, the recipes, and the gate
+  # memoization rules that decide when a recipe re-runs.
   - name: dev-docs
     source:
       - flake.nix
       - Justfile
+      - .mmz/config.yaml
     dependents:
       - CONTRIBUTING.md
       - AGENTS.md

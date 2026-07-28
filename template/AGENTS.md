@@ -13,6 +13,12 @@
 - Coverage and CRAP gates run separately (CI + `just validate`): `just cover`
   then `just crap`. If `just crap` flags a function, add tests or reduce its
   branching — don't raise the threshold to dodge it.
+- Every arm of `just check` is `just mmz <subgate>`:
+  [mmz](https://github.com/mlavrinenko/mmz) skips arms whose declared inputs are
+  unchanged since they last passed, so a new or retargeted gate needs its rule in
+  [.mmz/config.yaml](.mmz/config.yaml) — an unmatched command is a hard error, not
+  a silent skip. Don't wrap `just check` arms in `chronic`: a cache hit is already
+  quiet, and a miss must stream its output.
 - Be careful with the context. Omit non-necessary command outputs using `chronic` or `grep`.
 - [outdatty.yaml](outdatty.yaml) couples sources to dependents. When `just check`
   reports drift, update the listed dependents, then run `just outdatty-update`

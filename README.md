@@ -30,6 +30,9 @@ You'll be prompted for project name, GitHub username, description, and license.
 - File size limits via [linecop](https://github.com/mlavrinenko/linecop) (500 lines Rust, 200 Markdown)
 - Dependency drift detection via [outdatty](https://github.com/mlavrinenko/outdatty)
 - Unused dependency detection via `cargo-machete`
+- Per-gate memoization via [mmz](https://github.com/mlavrinenko/mmz): every arm of
+  `just check` is skipped when its declared inputs are unchanged, which makes the
+  `just install-hooks` pre-commit hook (the full gate, every commit) affordable
 
 **Testing**
 - Inline tests extraction via `ejectest`
@@ -42,6 +45,7 @@ You'll be prompted for project name, GitHub username, description, and license.
 - Flake with `nix develop` (rustc, cargo, clippy, rustfmt, just, rust-analyzer, nixd, ...)
 - `direnv` / `.envrc` for automatic shell activation
 - `Justfile` with common recipes (`just check`, `just test`, `just cover`, `just crap`, ...)
+- `just install-hooks` for a pre-commit gate
 
 **Docs & conventions**
 - `CHANGELOG.md` (Keep a Changelog + SemVer)
@@ -60,4 +64,4 @@ After making changes to the template, validate that it still produces a working 
 just validate
 ```
 
-This generates a project in a temp directory and runs fmt, clippy, tests, build, coverage, CRAP gate, and file size checks against it.
+This generates a project in a temp directory and runs fmt, clippy, tests, build, coverage, CRAP gate, and file size checks against it. It also asserts the gate wiring: a second `just check` must be a full mmz cache hit, `mmz --is-fresh --tag gate` must pass without running anything, and `just install-hooks` must produce an executable hook.
