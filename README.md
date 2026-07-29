@@ -25,7 +25,7 @@ You'll be prompted for project name, GitHub username, description, and license.
 - Rust 2024 edition, `rust-toolchain.toml`, `rustfmt.toml`, clippy at `deny` with `clippy.toml` thresholds
 
 **Quality gates**
-- Code coverage via `cargo-tarpaulin` (70% minimum)
+- Code coverage via `cargo-llvm-cov` (70% minimum)
 - CRAP metric gate via `cargo-crap`
 - File size limits via [linecop](https://github.com/mlavrinenko/linecop) (500 lines Rust, 200 Markdown)
 - Dependency drift detection via [outdatty](https://github.com/mlavrinenko/outdatty)

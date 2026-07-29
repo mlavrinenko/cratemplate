@@ -52,7 +52,7 @@ just install-hooks   # pre-commit hook running the (memoized) gate
 just check           # fmt + clippy + tests + file-size + drift check
 just build
 just test
-just cover           # code coverage (70% minimum)
+just cover           # code coverage via cargo-llvm-cov (70% minimum)
 just fmt             # format code
 ```
 

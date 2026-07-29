@@ -1,0 +1,137 @@
+# .mindtape/config.toml — cratemplate tracking itself (dogfood).
+
+[tasks]
+[[tasks.roots]]
+path = "truth/tasks"
+name = "ct"
+derive-tags = true
+
+[[tasks.status]]
+value = "proposed"
+glyph = "💡"
+color = "blue"
+to = ["accepted", "wip", "cancelled"]
+
+[[tasks.status]]
+value = "accepted"
+glyph = "📋"
+color = "cyan"
+to = ["wip", "cancelled"]
+
+[[tasks.status]]
+value = "wip"
+glyph = "🔨"
+color = "yellow"
+to = ["done", "failed", "accepted"]
+
+[[tasks.status]]
+value = "done"
+glyph = "✅"
+color = "green"
+terminal = true
+to = ["wip", "cancelled", "failed"]
+
+[[tasks.status]]
+value = "cancelled"
+glyph = "🚫"
+color = "magenta"
+terminal = true
+
+[[tasks.status]]
+value = "failed"
+glyph = "❌"
+color = "red"
+terminal = true
+to = ["wip"]
+
+[tasks.priority]
+kind = "int"
+min = 0
+max = 9
+required = "!terminal"
+framework = "ice"
+allow-manual = false
+
+[[tasks.priority.bands]]
+label = "low"
+min = 0
+max = 2
+glyph = "🟢"
+color = "green"
+
+[[tasks.priority.bands]]
+label = "normal"
+min = 3
+max = 6
+glyph = "🟡"
+color = "yellow"
+
+[[tasks.priority.bands]]
+label = "high"
+min = 7
+max = 9
+glyph = "🔴"
+color = "red"
+
+[tasks.difficulty]
+required = "!terminal"
+
+[tasks.estimate]
+units = ["files"]
+required = "!terminal"
+
+[tasks.estimate.max]
+files = 15
+
+[tasks.estimate.min]
+files = 1
+
+[tasks.tags]
+allowed = [
+  "ct",
+  "template",
+  "ci",
+  "docs",
+  "tooling",
+  "gating"
+]
+
+[tasks.comments]
+policy = "forbid"
+
+[[tasks.body.headers.rules]]
+path = ["Summary"]
+action = "unique"
+message = "every task must have exactly one Summary section"
+
+[[tasks.body.headers.rules]]
+action = "order"
+before = ["Summary"]
+after = ["Scope"]
+message = "Summary must precede Scope"
+
+[[tasks.limits]]
+filter = 'status == "wip" && kind == "umbrella"'
+max = 1
+severity = "error"
+message = "close or split the open umbrella before opening another"
+
+[[tasks.limits]]
+filter = 'status == "wip" && kind != "umbrella"'
+max = 1
+severity = "error"
+message = "finish the open task, or split off what is done and close that, before starting another"
+
+# Closing a task asserts the gate already ran against this worktree, rather
+# than running it here. `mmz --is-fresh --tag gate` exits 0 only when every
+# gate-tagged rule in .mmz/config.yaml last passed with these inputs unchanged;
+# it never runs any wrapped command itself.
+[[on.flip]]
+when = 'into("done") || into("cancelled") || into("failed")'
+actions = [
+  { run = "mmz --is-fresh --tag gate", gate = true, message = "the checks have not passed against this worktree — run `just check`, then flip again (`--force` waives it and records the waiver in the note)" },
+]
+
+[add]
+header = ""
+comments = false

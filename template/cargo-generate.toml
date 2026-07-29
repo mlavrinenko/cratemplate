@@ -1,6 +1,6 @@
 [template]
 cargo_generate_version = ">=0.10.0"
-exclude = ["Justfile", "flake.nix", "rust-toolchain.toml", "clippy.toml", "rustfmt.toml", "tarpaulin.toml", ".envrc", ".gitignore", ".linecop.yaml", ".mmz/config.yaml", ".mmz/.gitignore", ".github/workflows/ci.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml", ".github/workflows/release-lib.yml"]
+exclude = ["Justfile", "flake.nix", "rust-toolchain.toml", "clippy.toml", "rustfmt.toml", ".envrc", ".gitignore", ".linecop.yaml", ".mmz/config.yaml", ".mmz/.gitignore", ".github/workflows/ci.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml", ".github/workflows/release-lib.yml"]
 # outdatty.yaml is NOT in this list: its cli-docs group source list is
 # crate_kind-aware (src/main.rs only exists for bin), so it needs Liquid
 # rendering. It contains no GitHub `${{ }}` expressions, so this is safe —

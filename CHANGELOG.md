@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Copy-paste gate via [jscpd](https://github.com/kucherenko/jscpd):
+  `just check-dry` fails on duplicated Rust blocks of >=70 tokens.
+- `cargo-deny` config (`deny.toml`) for advisory, license, and dependency-ban checks.
+- `.github/dependabot.yml` for automated GitHub Actions version bumps.
+- MSRV verification via `cargo-msrv` (`cargo msrv verify`).
+- `cargo-mutants` recipes (`just mutants-diff` and `just mutants`) as dev aids.
+- `.mindtape/config.toml` for task tracking with a flip gate wired to
+  `mmz --is-fresh --tag gate`.
+
+### Changed
+
+- **Coverage: `cargo-tarpaulin` → `cargo-llvm-cov`.** llvm-cov merges the profraw
+  of child processes, so subprocess-based CLI e2e tests attribute coverage
+  correctly — tarpaulin missed them. The dev shell now exports `LLVM_COV` and
+  `LLVM_PROFDATA` from a standalone LLVM matching the rustc version.
+- **Pre-commit hook: `just check` → `mmz --is-fresh --tag gate`.** The hook is
+  now a freshness assertion rather than a re-run, making it cheaper. The hook
+  script moved from a Justfile heredoc to `scripts/pre-commit`.
+- **`just install-hooks`** now copies `scripts/pre-commit` rather than
+  generating it inline.
+- **`just release`** now asserts `mmz --is-fresh --tag gate` instead of
+  re-running `just check`.
+- **Root CI** now matrices `bin`/`lib` and uses pinned actions (SHA) with
+  `cache-nix-action` instead of the deprecated `magic-nix-cache-action`.
+- **Root `just validate`** parameterised with a `KIND` argument (bin/lib).
+  Validated both kinds.
+- **Root mmz dogfood:** a `.mmz/config.yaml` memoizes `just validate`, so a
+  no-op re-run is free when `template/` is unchanged.
+
+### Removed
+
+- `template/tarpaulin.toml` (replaced by `cargo-llvm-cov`).
+
+### Fixed
+
+- `template/.gitignore` no longer ignores all of `.cargo/` — only
+  `.cargo/config.toml`, so `.cargo/mutants.toml` is tracked.
+
 - Memoized gates via [mmz](https://github.com/mlavrinenko/mmz). Every arm of
   `just check` now runs as `just mmz <subgate>` (i.e. `mmz just <subgate>`), so
   an arm whose declared inputs are unchanged since it last passed is skipped;

@@ -10,9 +10,9 @@ default:
 fix-check: eject clippy-fix fmt check
 
 # Run all checks in parallel (fmt + clippy + tests + unused deps + file size +
-# drift). Each arm is `just mmz <subgate>` — mmz wraps it, so a no-op `just
-# check` re-run skips every arm whose declared inputs are unchanged, and
-# `mmz --is-fresh --tag gate` asserts they all passed without running any.
+# drift + copy-paste). Each arm is `just mmz <subgate>` — mmz wraps it, so a
+# no-op `just check` re-run skips every arm whose declared inputs are unchanged,
+# and `mmz --is-fresh --tag gate` asserts they all passed without running any.
 # Per-rule scopes and the `gate` tag live in .mmz/config.yaml. There is no
 # `chronic` here: a cache hit prints mmz's own `on_hit` note to stderr (quiet by
 # construction), a miss streams the underlying recipe's stdout/stderr live, and
@@ -24,6 +24,7 @@ check:
         "just mmz test" \
         "just mmz machete" \
         "just mmz check-file-size" \
+        "just mmz check-dry" \
         "just mmz outdatty-check"
 
 # Wrap a just recipe in mmz: `just mmz fmt-check` runs `mmz just fmt-check`. The
@@ -53,26 +54,32 @@ clippy:
     cargo clippy --workspace --all-targets -q -- -D warnings
 
 # Auto-fix clippy warnings (allow-dirty/-staged: fix-check runs pre-commit, tree is dirty).
-# Restore write on target/ first: tarpaulin (`just cover`/`just crap`) leaves *.rmeta
-# artifacts read-only, and `clippy --fix` then aborts with "output file ... is not
-# writeable". Cheap self-heal so `fix-check` after `cover`/`crap` never trips on it.
 clippy-fix:
-    chmod -R u+w target 2>/dev/null || true
     cargo clippy --fix --workspace --all-targets --allow-dirty --allow-staged -- -D warnings
 
 # Build the project
 build *args:
     cargo build --workspace -q {{ args }}
 
-# Run coverage with tarpaulin (also writes target/coverage/lcov.info).
-# --all-features so optional-feature code is measured, not silently skipped.
+# Run coverage with cargo-llvm-cov. llvm-cov, unlike tarpaulin, merges the
+# profraw of child processes, so subprocess-based CLI e2e tests actually
+# attribute to the code they exercise. Instrument once (--no-report), then
+# render both reports from that profdata. main.rs is excluded — keep it thin;
+# `just crap` excludes it too. The /registry/src/ ignore keeps local and CI
+# reporting the same set when CARGO_HOME is relocated.
 cover:
-    cargo tarpaulin --workspace --all-features --skip-clean
+    #!/usr/bin/env bash
+    set -eo pipefail
+    ignore='src/main\.rs|/registry/src/'
+    mkdir -p target/coverage
+    cargo llvm-cov --workspace --no-report
+    cargo llvm-cov report --ignore-filename-regex "$ignore" \
+        --lcov --output-path target/coverage/lcov.info
+    cargo llvm-cov report --ignore-filename-regex "$ignore" --fail-under-lines 70
 
 # Gate complex, undertested functions via CRAP metric. Needs lcov from `just
 # cover` first. Threshold 30 is a sane greenfield default; tune per repo.
-# cargo-crap has no --all-features flag: it statically reads source + the lcov
-# already produced by `just cover --all-features`, it doesn't build anything.
+# `--exclude main.rs` is harmless for libs (where the file doesn't exist).
 crap:
     cargo crap --lcov target/coverage/lcov.info --workspace --exclude 'src/main.rs' --threshold 30 --fail-above
 
@@ -107,33 +114,30 @@ eject PCT='90':
 check-file-size:
     linecop
 
-# Install git hooks (pre-commit runs `just check`). Running the whole gate on
-# every commit is affordable only because each arm is memoized by mmz: a commit
-# that touches nothing a gate reads skips every arm, and one that touches a
-# single file re-runs only the arms that declare it. The hook checks the
-# WORKTREE, not the staged snapshot — the same thing `just check` checks, so a
-# green `just check` is a green commit. Hooks are not tracked by git, so run
-# this once per clone. Bypass a single commit with `git commit --no-verify`.
+# Copy-paste gate: fail on any duplicated Rust block across the crate.
+check-dry:
+    #!/usr/bin/env bash
+    set -eo pipefail
+    # jscpd (the Rust port, packaged via qahq in flake.nix) fails on any
+    # duplicated block of >=70 tokens, naming both spans. Fix a finding by
+    # extracting a shared helper — never by shuffling tokens until the
+    # detector loses the scent.
+    #
+    # `--exit-code 1` is spelled with its value: bare `--exit-code` would
+    # swallow the following path argument as its optional code.
+    jscpd --no-tips -k 70 -f rust --exit-code 1 src tests
+
+# Install git hooks. Copies scripts/pre-commit to .git/hooks/pre-commit.
+# The hook runs `mmz --is-fresh --tag gate` — a freshness assertion, not
+# a re-run of the gate, so it is cheap enough for every commit. Hooks are
+# not tracked by git, so run this once per clone. Bypass a single commit
+# with `git commit --no-verify`.
 install-hooks:
     #!/usr/bin/env bash
     set -eo pipefail
     hook="$(git rev-parse --git-path hooks/pre-commit)"
     mkdir -p "$(dirname "$hook")"
-    cat > "$hook" <<'HOOK'
-    #!/usr/bin/env bash
-    set -eo pipefail
-    root="$(git rev-parse --show-toplevel)"
-    cd "$root"
-    # The gate's tools all come from the flake dev shell; enter it the cheapest
-    # way that works here. `direnv exec ... true` is a probe: direnv fails that
-    # when .envrc has not been allowed, and the nix develop fallback still runs.
-    if command -v mmz >/dev/null 2>&1; then
-        exec just check
-    elif command -v direnv >/dev/null 2>&1 && direnv exec "$root" true 2>/dev/null; then
-        exec direnv exec "$root" just check
-    fi
-    exec nix develop "$root" --command just check
-    HOOK
+    cp scripts/pre-commit "$hook"
     chmod +x "$hook"
     echo "installed $hook"
 
@@ -146,6 +150,24 @@ release VERSION:
         echo "error: requested v{{ VERSION }} but Cargo.toml is $cargo_version; bump Cargo.toml first" >&2
         exit 1
     fi
-    just check
+    mmz --is-fresh --tag gate
     git tag -a "v{{ VERSION }}" -m "v{{ VERSION }}"
     git push origin "v{{ VERSION }}"
+
+# Pre-PR mutation check — the daily driver. Sweeps only mutants touched by
+# this branch's diff against main, so it needs no state file and covers new
+# files for free (every line of a new file is "touched"). A surviving MISSED
+# mutant is a real assertion gap: a line covered but not pinned.
+mutants-diff *ARGS:
+    #!/usr/bin/env bash
+    set -eo pipefail
+    export CARGO_MUTANTS_JOBS="${CARGO_MUTANTS_JOBS:-3}"
+    diff_file=$(mktemp)
+    trap 'rm -f "$diff_file"' EXIT
+    git diff "$(git merge-base main HEAD)" > "$diff_file"
+    cargo mutants --in-diff "$diff_file" {{ ARGS }}
+
+# Full-file mutation sweep — a dev aid, never a gate. Extra args pass through
+# to cargo-mutants. File set and excludes come from .cargo/mutants.toml.
+mutants *ARGS:
+    cargo mutants {{ ARGS }}

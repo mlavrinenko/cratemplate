@@ -17,8 +17,8 @@
 #
 # Rules tagged `gate` are the gate set: `mmz --is-fresh --tag gate` asserts every
 # one of them already passed against this worktree, running none of them — the
-# predicate to wire into a pre-push hook or a task tracker's close gate. Untagged
-# rules (cover, crap) are memoized for convenience only and stay out of it.
+# predicate the pre-commit hook checks. Untagged rules (cover, crap) are
+# memoized for convenience only and stay out of it.
 #
 # Adding an arm to `just check` means adding its rule here: mmz's default
 # `strict` rejects an invocation that matches no rule, so a missing rule is an
@@ -67,11 +67,6 @@ scopes:
     - "AGENTS.md"
     - "CHANGELOG.md"
     - "www/**"
-
-  # tarpaulin's config — coverage scope/exclusions change what `just cover`
-  # measures.
-  coverage-config:
-    - "tarpaulin.toml"
 
   # `just crap` reads the lcov `just cover` wrote. It is gitignored (it lives
   # under target/), which is exactly why it is spelled as a LITERAL path: mmz's
@@ -128,6 +123,12 @@ commands:
     tags: [gate]
     inputs: [rust, file-size-config, docs, gates-meta]
 
+  # jscpd scans `src/` and `tests/` for duplicated Rust blocks (>=70 tokens).
+  # The `-k 70` threshold is Justfile-defined, so a Justfile edit re-runs this.
+  - name: just check-dry
+    tags: [gate]
+    inputs: [rust, gates-meta]
+
   # outdatty re-reads every dependent's current content and compares it to the
   # lock; `outdatty-config` covers the lock and the group definitions directly.
   - name: just outdatty-check
@@ -138,7 +139,7 @@ commands:
   # their own job), so they stay out of the gate set. Memoized only so a no-op
   # re-run of the slow coverage pair is free.
   - name: just cover
-    inputs: [rust, coverage-config, gates-meta]
+    inputs: [rust, gates-meta]
 
   - name: just crap
-    inputs: [rust, lcov, coverage-config, gates-meta]
+    inputs: [rust, lcov, gates-meta]

@@ -1,0 +1,5 @@
+{% if crate_kind == "bin" -%}
+exclude = ["src/main.rs"]
+{% else -%}
+exclude = []
+{% endif -%}

@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mlavrinenko/mmz/v0.5.0/schema/mmz.schema.json
+#
+# .mmz/config.yaml — memoization for cratemplate's own `just validate`.
+#
+# `just validate` regenerates a scratch project from template/ and runs the
+# full gate inside it. Its only input is template/** — a one-rule manifest
+# makes a no-op re-run free.
+
+scopes:
+  template:
+    - "template/**"
+    - "Justfile"
+    - "flake.nix"
+    - "flake.lock"
+    - ".mmz/config.yaml"
+
+on_hit: "mmz: skipped just validate (template unchanged)"
+
+commands:
+  - name: just validate bin
+    inputs: [template]
+
+  - name: just validate lib
+    inputs: [template]

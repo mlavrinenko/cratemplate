@@ -1,12 +1,14 @@
 {
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
+    mmz.url = "github:mlavrinenko/mmz";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
   outputs =
     {
       flake-utils,
+      mmz,
       nixpkgs,
       ...
     }:
@@ -19,12 +21,14 @@
       in
       let
         shell = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [
+          nativeBuildInputs = [
+            mmz.packages.${system}.default
+          ] ++ (with pkgs; [
             just
             tokei
             jq
             cargo-generate
-          ];
+          ]);
         };
       in
       {

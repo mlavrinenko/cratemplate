@@ -53,9 +53,11 @@ where relevant.
 
 ## Code Coverage
 
-Minimum 70% coverage enforced via `cargo-tarpaulin`. Run `just cover` to check.
+Minimum 70% line coverage enforced via `cargo-llvm-cov`. Run `just cover` to check.
+llvm-cov merges the profraw of child processes, so subprocess-based e2e tests
+attribute correctly — unlike tarpaulin, which misses them.
 {%- if crate_kind == "bin" %}
-`main.rs` is excluded — keep it thin and move testable logic to `lib.rs`.
+`main.rs` is excluded from coverage — keep it thin and move testable logic to `lib.rs`.
 {%- endif %}
 
 ## CRAP Gate
@@ -110,12 +112,47 @@ worth knowing:
   delete its record under `.mmz/cache/` (gitignored via `.mmz/.gitignore`).
 - `mmz --status` prints every rule's freshness as a table.
 
+## Copy-Paste Gate
+
+`just check-dry` runs [jscpd](https://github.com/kucherenko/jscpd) over `src/`
+and `tests/` and fails on any duplicated Rust block of >=70 tokens. Fix a
+finding by extracting a shared helper — never by shuffling tokens until the
+detector loses the scent.
+
+## Dependency Audits
+
+`cargo-deny` checks advisories, licenses, and dependency bans. Run it
+separately (it's not part of `just check` — CI runs it in its own job):
+
+```bash
+cargo deny check advisories
+cargo deny check licenses
+```
+
+## MSRV
+
+The `rust-version` field in `Cargo.toml` declares the minimum supported Rust
+version. CI verifies it compiles on that version in a separate job.
+
+## Mutation Testing
+
+`cargo-mutants` helps find assertion gaps by injecting bugs and checking that
+tests catch them. Two recipes:
+
+- `just mutants-diff` — sweeps only mutants touched by this branch's diff
+  against `main` (the daily driver).
+- `just mutants` — full-file sweep (a dev aid, never a gate).
+
+A surviving `MISSED` mutant is a real assertion gap: a line covered but not
+pinned by any assertion.
+
 ## Git Hooks
 
-`just install-hooks` writes a `pre-commit` hook that runs `just check` in the
-flake dev shell. Running the full gate per commit is affordable precisely because
-of the memoization above: a commit that changes nothing a gate reads skips every
-arm. Hooks are not tracked by git, so run the recipe once per clone; bypass a
+`just install-hooks` copies `scripts/pre-commit` to `.git/hooks/pre-commit`.
+The hook runs `mmz --is-fresh --tag gate` — a freshness assertion that checks
+every gate-tagged rule in `.mmz/config.yaml` already passed against this
+worktree, running nothing of its own. It is cheap enough for every commit.
+Hooks are not tracked by git, so run the recipe once per clone; bypass a
 single commit with `git commit --no-verify`.
 
 ## Submitting Changes

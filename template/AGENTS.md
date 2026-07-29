@@ -11,7 +11,9 @@
 - Tests: inline `#[cfg(test)]` units next to the code they exercise; add `tests/` integration tests for public-API behaviour that spans modules. `just fix-check` auto-ejects inline tests from oversized files via `ejectest`.
 {% endif -%}
 - Coverage and CRAP gates run separately (CI + `just validate`): `just cover`
-  then `just crap`. If `just crap` flags a function, add tests or reduce its
+  then `just crap`. `just cover` uses `cargo-llvm-cov` (not tarpaulin) — it
+  merges child-process profraw, so subprocess-based e2e tests attribute
+  correctly. If `just crap` flags a function, add tests or reduce its
   branching — don't raise the threshold to dodge it.
 - Every arm of `just check` is `just mmz <subgate>`:
   [mmz](https://github.com/mlavrinenko/mmz) skips arms whose declared inputs are
@@ -23,6 +25,9 @@
 - [outdatty.yaml](outdatty.yaml) couples sources to dependents. When `just check`
   reports drift, update the listed dependents, then run `just outdatty-update`
   to re-confirm. Add a group whenever you introduce files that must stay in sync.
+- `just check-dry` (jscpd) flags duplicated Rust blocks of >=70 tokens. Fix
+  a finding by extracting a shared helper — never by shuffling tokens until
+  the detector loses the scent.
 - Eating your own dog food: the tool should use itself if applicable.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for project conventions and code standards.

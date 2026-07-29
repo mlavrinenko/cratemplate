@@ -32,6 +32,11 @@
 
         naersk' = pkgs.callPackage naersk { };
 
+        # nixpkgs' rustc ships no `llvm-tools-preview` component, so
+        # cargo-llvm-cov cannot find llvm-cov/llvm-profdata in the sysroot.
+        # Point it at a standalone LLVM of the SAME major as rustc's — a
+        # mismatched llvm-profdata rejects the profraw format.
+        llvm = pkgs.llvmPackages_21.llvm;
       in
       {
         # For `nix build` & `nix run`:
@@ -47,6 +52,7 @@
           nativeBuildInputs = [
             qahq.packages.${system}.cargo-crap
             qahq.packages.${system}.ejectest
+            qahq.packages.${system}.jscpd
             qahq.packages.${system}.linecop
             qahq.packages.${system}.outdatty
             # Memoized command runner. Every arm of `just check` runs as
@@ -58,8 +64,10 @@
           ] ++ (with pkgs; [
             rustc
             cargo
+            cargo-llvm-cov
             cargo-machete
-            cargo-tarpaulin
+            cargo-mutants
+            cargo-deny
             clippy
             rustfmt
             just
@@ -67,6 +75,10 @@
             nixd
             rust-analyzer
           ]);
+          shellHook = ''
+            export LLVM_COV=${llvm}/bin/llvm-cov
+            export LLVM_PROFDATA=${llvm}/bin/llvm-profdata
+          '';
         };
       }
     );

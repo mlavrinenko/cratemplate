@@ -1,4 +1,4 @@
 /.direnv
 /target
 /var
-/.cargo/
+/.cargo/config.toml
