@@ -16,9 +16,16 @@ scopes:
 
 on_hit: "mmz: skipped just validate (template unchanged)"
 
+# Both rules carry `gate`, which is what `.mindtape/config.toml`'s flip gate
+# asserts (`mmz --is-fresh --tag gate`). That assertion passes VACUOUSLY when no
+# rule bears the tag, so an untagged manifest here would silently turn the close
+# gate into a no-op. Any future rule that must hold before a task closes belongs
+# in this tag; anything memoized for convenience only stays out of it.
 commands:
   - name: just validate bin
+    tags: [gate]
     inputs: [template]
 
   - name: just validate lib
+    tags: [gate]
     inputs: [template]
