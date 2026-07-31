@@ -19,7 +19,11 @@ default = "A Rust project"
 [placeholders.license]
 type = "string"
 prompt = "License?"
-choices = ["MIT", "Apache-2.0", "MIT OR Apache-2.0", "GPL-3.0"]
+# SPDX identifiers, verbatim: the value lands in Cargo.toml's `license` field,
+# which crates.io and `cargo deny check licenses` both parse as SPDX. Plain
+# "GPL-3.0" is deprecated in SPDX and warns; "GPL-3.0-only" is its replacement
+# (shipping the v3 text with no "or later" clause).
+choices = ["MIT", "Apache-2.0", "MIT OR Apache-2.0", "GPL-3.0-only"]
 default = "MIT"
 
 # NOTE: underscore, not hyphen. cargo-generate's `[conditional]` expressions
@@ -44,7 +48,7 @@ ignore = ["LICENSE-MIT", "LICENSE-GPL"]
 [conditional.'license == "MIT OR Apache-2.0"']
 ignore = ["LICENSE-GPL"]
 
-[conditional.'license == "GPL-3.0"']
+[conditional.'license == "GPL-3.0-only"']
 ignore = ["LICENSE-MIT", "LICENSE-APACHE"]
 
 # Conditional crate-kind file inclusion: a lib has no binary entry point or CLI

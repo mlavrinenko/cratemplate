@@ -39,8 +39,18 @@ validate KIND='bin':
     cd "$WORK_DIR/$PROJECT_NAME"
     git add -A
 
-    nix develop --command bash -c '
+    # Fed to `bash -s` over a QUOTED heredoc, not `bash -c '...'`. Same
+    # semantics (no expansion by the outer shell), but an apostrophe in the body
+    # is inert: inside a single-quoted string one would close the quote early
+    # and silently run the remainder in the OUTER shell, where the generated
+    # project has no Rust toolchain and gates pass or fail for the wrong reason.
+    nix develop --command bash -s <<'INNER'
         set -eo pipefail
+
+        # The gates below are only meaningful inside the dev shell. If this
+        # block ever escapes it, fail loudly instead of misreporting.
+        command -v cargo >/dev/null || { echo "not in the dev shell" >&2; exit 1; }
+
         just outdatty-update
         just check
 
@@ -55,10 +65,14 @@ validate KIND='bin':
         just cover
         just crap
 
+        # cargo-deny rejects a retired config key outright, so a deny.toml
+        # that has drifted out of schema fails CI in every generated project.
+        just deny
+
         echo "--- Verifying nix build (package) in a clean sandbox"
         git add -A
         nix build .#default
-    '
+    INNER
 
     echo ""
     echo "=== All checks passed ==="

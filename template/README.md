@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/{{gh-username}}/{{project-name}}/actions/workflows/ci.yml/badge.svg)](https://github.com/{{gh-username}}/{{project-name}}/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/{{project-name}}.svg)](https://crates.io/crates/{{project-name}})
-[![License: {{license}}](https://img.shields.io/crates/l/{{project-name}}.svg)](LICENSE-MIT)
+[![License: {{license}}](https://img.shields.io/crates/l/{{project-name}}.svg)]({% if license == "GPL-3.0-only" %}LICENSE-GPL{% elsif license == "Apache-2.0" %}LICENSE-APACHE{% else %}LICENSE-MIT{% endif %})
 
 {{description}}
 
@@ -49,7 +49,8 @@ Prerequisites: [Nix](https://nixos.org/) with flakes enabled.
 direnv allow         # or: nix develop
 just install-hooks   # pre-commit hook running the (memoized) gate
 
-just check           # fmt + clippy + tests + file-size + drift check
+just check           # fmt, clippy, tests, unused deps, file size, drift, copy-paste
+just deny            # cargo-deny: advisories, licenses, bans (needs network)
 just build
 just test
 just cover           # code coverage via cargo-llvm-cov (70% minimum)

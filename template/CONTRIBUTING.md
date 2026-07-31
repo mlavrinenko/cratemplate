@@ -105,12 +105,19 @@ worth knowing:
 - Rule names match by prefix on whole argv tokens. `just test` is `match: exact`
   so a filtered `just test <filter>` can never record the full-suite identity.
 - Rules tagged `gate` are the gate set: `mmz --is-fresh --tag gate` asserts every
-  one already passed against this worktree and runs nothing, which is the check
-  to wire into a pre-push hook or a task tracker's close gate. `just cover` and
-  `just crap` are untagged — memoized, but never blocking.
+  one already passed against this worktree and runs nothing. That is what the
+  pre-commit hook checks (see Git Hooks below), and what to wire into a task
+  tracker's close gate. `just cover` and `just crap` are untagged — memoized,
+  but never blocking. A tag matching no rule asserts nothing and passes
+  vacuously, so any new gate arm must carry the `gate` tag to be covered.
 - There is no `--force`. To re-run a fresh rule, touch one of its inputs or
   delete its record under `.mmz/cache/` (gitignored via `.mmz/.gitignore`).
 - `mmz --status` prints every rule's freshness as a table.
+- In a brand-new clone there is no `Cargo.lock` yet; cargo writes it during the
+  first `just check`, so the arms that declare it record a pre-lock digest and
+  miss once more on the second run. "A no-op re-run is a full hit" holds from
+  the third run onward. Nothing to fix — just do not read that first miss as a
+  broken cache.
 
 ## Copy-Paste Gate
 
@@ -121,13 +128,16 @@ detector loses the scent.
 
 ## Dependency Audits
 
-`cargo-deny` checks advisories, licenses, and dependency bans. Run it
-separately (it's not part of `just check` — CI runs it in its own job):
+`just deny` runs `cargo-deny` over advisories, the license allow-list, and
+dependency bans. It is deliberately not part of `just check`: it fetches the
+advisory database, so it needs network and would make an offline commit fail.
+CI runs it in its own job.
 
-```bash
-cargo deny check advisories
-cargo deny check licenses
-```
+The policy lives in [deny.toml](deny.toml). A dependency under a license not in
+`licenses.allow` fails the check — add one deliberately, not to silence a
+finding. Keep the file in cargo-deny's current schema: a retired key (the old
+`advisories.vulnerability`, `licenses.copyleft`, ...) is rejected outright and
+fails the whole check rather than being ignored.
 
 ## MSRV
 

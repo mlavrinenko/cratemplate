@@ -127,6 +127,14 @@ check-dry:
     # swallow the following path argument as its optional code.
     jscpd --no-tips -k 70 -f rust --exit-code 1 src tests
 
+# Dependency audit: advisories, license policy, and dependency bans. Kept out
+# of `just check` on purpose — it fetches the advisory database, so it needs
+# network and has no business blocking an offline commit. CI runs it in its own
+# job, and `just validate` (in the template repo) runs it against a freshly
+# generated project, so deny.toml can't silently rot out of schema.
+deny:
+    cargo deny check advisories licenses bans
+
 # Install git hooks. Copies scripts/pre-commit to .git/hooks/pre-commit.
 # The hook runs `mmz --is-fresh --tag gate` — a freshness assertion, not
 # a re-run of the gate, so it is cheap enough for every commit. Hooks are

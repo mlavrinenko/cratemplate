@@ -28,6 +28,9 @@
 - `just check-dry` (jscpd) flags duplicated Rust blocks of >=70 tokens. Fix
   a finding by extracting a shared helper — never by shuffling tokens until
   the detector loses the scent.
+- `just deny` (cargo-deny: advisories, licenses, bans) is not in `just check` —
+  it needs network. Run it after touching dependencies. Widen `deny.toml`'s
+  allow-list deliberately; never to silence a finding.
 - Eating your own dog food: the tool should use itself if applicable.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for project conventions and code standards.

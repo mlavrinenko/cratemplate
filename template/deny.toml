@@ -1,32 +1,53 @@
+# cargo-deny configuration. Run via `just deny` (CI runs it in its own job).
+#
+# Schema is cargo-deny >= 0.16: `targets` lives under `[graph]`, and the old
+# `advisories.vulnerability`/`advisories.notice`/`licenses.unlicensed`/
+# `licenses.copyleft`/`licenses.default` keys are gone — a vulnerability or an
+# unlicensed crate is always an error now, so they need no setting. Keep this
+# file in the current schema: cargo-deny rejects an unknown or retired key
+# outright rather than ignoring it, which fails the whole check.
+
+[graph]
 targets = [
-  { triple = "x86_64-unknown-linux-gnu" },
-  { triple = "aarch64-unknown-linux-gnu" },
-  { triple = "x86_64-apple-darwin" },
-  { triple = "aarch64-apple-darwin" },
-  { triple = "x86_64-pc-windows-msvc" },
+  "x86_64-unknown-linux-gnu",
+  "aarch64-unknown-linux-gnu",
+  "x86_64-apple-darwin",
+  "aarch64-apple-darwin",
+  "x86_64-pc-windows-msvc",
 ]
 
 [advisories]
-vulnerability = "deny"
-unmaintained = "deny"
+# "workspace" reports unmaintained advisories for this crate's own direct
+# dependencies. Widen to "all" to include transitive ones once the dependency
+# tree is stable enough that the noise is actionable.
+unmaintained = "workspace"
 yanked = "deny"
-notice = "warn"
 ignore = []
 
 [licenses]
-unlicensed = "deny"
+# The allow-list is the policy: a dependency under anything not listed here
+# fails the check. Add a license deliberately, never to silence a finding.
 allow = [
   "MIT",
   "Apache-2.0",
   "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
   "BSD-3-Clause",
   "Unicode-3.0",
   "ISC",
   "Zlib",
+{%- if license == "GPL-3.0-only" %}
+  # This crate's own license. cargo-deny checks the workspace members too, so
+  # the project's license has to be allowed alongside its dependencies'.
+  "GPL-3.0-only",
+{%- endif %}
 ]
-copyleft = "deny"
-default = "deny"
+# Without this, every allowed-but-unused license is a `license-not-encountered`
+# finding and the check fails — which would mean pruning the list down to
+# exactly today's dependency tree and re-editing it on every `cargo add`.
+unused-allowed-license = "allow"
 confidence-threshold = 0.8
+exceptions = []
 
 [bans]
 multiple-versions = "warn"
