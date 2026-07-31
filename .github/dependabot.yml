@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # This repo pins its actions to commit SHAs (the policy the template teaches),
+  # which only stays safe if something bumps them. Same config the template
+  # ships, so the dogfooding is exact.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
