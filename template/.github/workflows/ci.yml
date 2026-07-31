@@ -83,19 +83,31 @@ jobs:
           purge-created: 0
           purge-primary-key: never
 
-      - name: Check advisories
-        run: nix develop --command cargo deny check advisories
-
-      - name: Check licenses
-        run: nix develop --command cargo deny check licenses
+      # Same recipe as local `just deny`, so CI and a developer's run cannot
+      # diverge on which cargo-deny checks are enforced.
+      - name: Advisories, licenses, bans
+        run: nix develop --command just deny
 
   msrv:
     name: MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6.0.3
+      # Read the MSRV out of Cargo.toml rather than hardcoding it here: a
+      # hardcoded copy silently keeps testing the old version after someone
+      # bumps `rust-version`, which is exactly when the job stops meaning
+      # anything.
+      - name: Read MSRV from Cargo.toml
+        id: msrv
+        run: |
+          version=$(sed -n 's/^rust-version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if [ -z "$version" ]; then
+            echo "::error::no rust-version in Cargo.toml"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
         with:
-          toolchain: "1.85"
+          toolchain: ${{ steps.msrv.outputs.version }}
       - name: Check
         run: cargo check --workspace --all-targets
