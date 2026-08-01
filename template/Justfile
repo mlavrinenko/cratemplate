@@ -28,19 +28,9 @@ fix-check: eject clippy-fix fmt check
 # drift + copy-paste). Each arm is `just mmz <subgate>` — mmz wraps it, so a
 # no-op `just check` re-run skips every arm whose declared inputs are unchanged,
 # and `mmz --is-fresh --tag gate` asserts they all passed without running any.
-# Per-rule scopes and the `gate` tag live in .mmz/config.yaml. There is no
-# `chronic` here: a cache hit prints mmz's own `on_hit` note to stderr (quiet by
-# construction), a miss streams the underlying recipe's stdout/stderr live, and
-# a failure propagates its non-zero exit out of `parallel` unchanged.
-check:
-    parallel -j 0 -- \
-        "just mmz fmt-check" \
-        "just mmz clippy" \
-        "just mmz test" \
-        "just mmz machete" \
-        "just mmz check-file-size" \
-        "just mmz check-dry" \
-        "just mmz outdatty-check"
+# Per-rule scopes and the `gate` tag live in .mmz/config.yaml.
+[parallel]
+check: (mmz "fmt-check") (mmz "clippy") (mmz "test") (mmz "machete") (mmz "check-file-size") (mmz "check-dry") (mmz "outdatty-check")
 
 # Wrap a just recipe in mmz: `just mmz fmt-check` runs `mmz just fmt-check`. The
 # double hop makes mmz the cache identity (rule name `just <recipe>` in

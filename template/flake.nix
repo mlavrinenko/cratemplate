@@ -76,7 +76,6 @@
             clippy
             rustfmt
             just
-            moreutils
             nixd
             rust-analyzer
           ]);
