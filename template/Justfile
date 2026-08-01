@@ -118,15 +118,17 @@ fmt-check:
 machete:
     cargo machete
 
-# Count tests across workspace
+# Count tests across workspace. Under the global pipefail shell a suite that
+# fails to build or run takes the recipe down with it — a count scraped from a
+# broken run is not worth reporting.
 count-tests:
-    #!/usr/bin/env bash
     cargo test --workspace 2>&1 | grep "test result:" | awk '{sum += $4} END {print sum " tests"}'
 
-# Show top 20 files by line count
+# Show top 20 files by line count. `awk NR<=20` and not `head -20`: head exits
+# after its 20th line, which SIGPIPEs sort once the listing outgrows the pipe
+# buffer, and pipefail would report that 141 as a recipe failure.
 file-sizes:
-    #!/usr/bin/env bash
-    find . -type f \( -name '*.rs' -o -name '*.md' \) ! -path './target/*' -exec wc -l {} + | sort -rn | head -20
+    find . -type f \( -name '*.rs' -o -name '*.md' \) ! -path './target/*' -exec wc -l {} + | sort -rn | awk 'NR <= 20'
 
 # Eject inline tests from Rust files nearing the linecop limit, so they stay
 # under it without losing the inline-test workflow. Runs as part of `fix-check`.
