@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Git hook is tracked and auto-wired.** `.githooks/pre-commit` follows the
+  clone (no post-clone copy); `just install-hooks` now runs
+  `git config core.hooksPath .githooks` (the dev-shell `shellHook` runs the
+  same recipe on entry), so the gate-freshness assertion the hook runs
+  (`mmz --is-fresh --tag gate`) is live with no manual step. Edits to the
+  tracked hook take effect immediately, and the legacy `cp scripts/pre-commit
+  .git/hooks/pre-commit` step is gone.
+
 ## [0.2.0] - 2026-07-31
 
 ### Added

@@ -158,12 +158,16 @@ pinned by any assertion.
 
 ## Git Hooks
 
-`just install-hooks` copies `scripts/pre-commit` to `.git/hooks/pre-commit`.
+The hook lives at `.githooks/pre-commit` and is tracked by git, so clones get
+it without a copy step. `just install-hooks` runs
+`git config core.hooksPath .githooks` (idempotent); the dev-shell `shellHook`
+runs that recipe on entry, so a fresh clone's first `nix develop` wires the
+hook and edits to the tracked file take effect live.
+
 The hook runs `mmz --is-fresh --tag gate` — a freshness assertion that checks
 every gate-tagged rule in `.mmz/config.yaml` already passed against this
 worktree, running nothing of its own. It is cheap enough for every commit.
-Hooks are not tracked by git, so run the recipe once per clone; bypass a
-single commit with `git commit --no-verify`.
+Bypass a single commit with `git commit --no-verify`.
 
 ## Submitting Changes
 

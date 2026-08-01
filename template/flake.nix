@@ -78,6 +78,11 @@
           shellHook = ''
             export LLVM_COV=${llvm}/bin/llvm-cov
             export LLVM_PROFDATA=${llvm}/bin/llvm-profdata
+            # Wire the tracked pre-commit hook (.githooks/) on every shell
+            # entry, so a fresh clone's first `nix develop` installs it and
+            # a hooksPath edit is picked up live. Quiet: log noise would
+            # print on every shell a contributor opens.
+            just install-hooks > /dev/null 2>&1
           '';
         };
       }
