@@ -68,6 +68,11 @@
             cargo-machete
             cargo-mutants
             cargo-deny
+            # Dev aids behind `just nextest` / `just outdated`, deliberately
+            # not wired into `just check`: nextest does not run doctests, and
+            # a new upstream release is not a reason for a gate to go red.
+            cargo-nextest
+            cargo-outdated
             clippy
             rustfmt
             just

@@ -34,7 +34,12 @@
   the detector loses the scent.
 - `just deny` (cargo-deny: advisories, licenses, bans) is not in `just check` —
   it needs network. Run it after touching dependencies. Widen `deny.toml`'s
-  allow-list deliberately; never to silence a finding.
+  allow-list deliberately; never to silence a finding. `just outdated`
+  (cargo-outdated) is network-bound too and reports newer upstream releases;
+  it is a dev aid, never a gate.
+- `just nextest` runs the suite under cargo-nextest for readable output and
+  per-test isolation. It skips doctests, so `just test` — not nextest — remains
+  the gate and the command `just cover` instruments.
 - Eating your own dog food: the tool should use itself if applicable.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for project conventions and code standards.

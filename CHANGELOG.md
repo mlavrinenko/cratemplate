@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`just nextest` and `just outdated`.** The dev shell now ships
+  `cargo-nextest` (per-test process isolation and readable output) and
+  `cargo-outdated` (dependencies with newer versions published). Both are dev
+  aids, wired into no gate: nextest does not run doctests, so `just test` stays
+  what `just check` and `just cover` drive, and an upstream release is not a
+  reason for CI to go red.
 - **`just status`.** One-line view of every memoized rule's freshness
   (`mmz --status`): which arms of `just check` would re-run, and whether the
   pre-commit hook's `mmz --is-fresh --tag gate` would pass right now. Reads

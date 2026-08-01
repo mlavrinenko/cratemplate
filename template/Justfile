@@ -70,6 +70,13 @@ outdatty-update:
 test *ARGS:
     cargo test --workspace {{ ARGS }}
 
+# Run tests through cargo-nextest: one process per test, so a panicking or
+# hanging test is isolated and the output is far easier to read. A dev aid, not
+# a gate — `just test` and `just cover` stay on `cargo test`, which runs
+# doctests (nextest does not) and is what cargo-llvm-cov instruments here.
+nextest *ARGS:
+    cargo nextest run --workspace {{ ARGS }}
+
 # Run clippy only
 clippy:
     cargo clippy --workspace --all-targets -q -- -D warnings
@@ -157,6 +164,13 @@ check-dry:
 # generated project, so deny.toml can't silently rot out of schema.
 deny:
     cargo deny check advisories licenses bans
+
+# List dependencies with newer versions available. Needs network, and is a dev
+# aid rather than a gate: an upstream release is not a reason for CI to go red.
+# Unrelated to `just outdatty-check`, which is about doc drift inside this repo,
+# not dependency versions.
+outdated:
+    cargo outdated --workspace
 
 # Point git at the tracked pre-commit hook (`.githooks/pre-commit` asserts
 # `mmz --is-fresh --tag gate` against the worktree, running nothing of its

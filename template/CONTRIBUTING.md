@@ -45,7 +45,10 @@ where relevant.
 {% if crate_kind == "lib" -%}
 - Integration tests that exercise the public API across modules live in `tests/`.
 {% endif -%}
-- Run the full suite with `just test`.
+- Run the full suite with `just test`. `just nextest` runs the same tests through
+  [cargo-nextest](https://nexte.st) — one process per test, so a panic or a hang is
+  isolated and the output is easier to read. It does not run doctests, so `just test`
+  stays the gate and what `just cover` instruments.
 - As a file approaches the linecop limit, `just fix-check` ejects its inline
   `#[cfg(test)]` module into a sibling `_tests.rs` file via
   [ejectest](https://github.com/mlavrinenko/ejectest), driven by `linecop --baseline`.
@@ -139,6 +142,11 @@ The policy lives in [deny.toml](deny.toml). A dependency under a license not in
 finding. Keep the file in cargo-deny's current schema: a retired key (the old
 `advisories.vulnerability`, `licenses.copyleft`, ...) is rejected outright and
 fails the whole check rather than being ignored.
+
+`just outdated` (cargo-outdated) lists dependencies with newer versions
+published. Also network-bound, and deliberately not a gate — an upstream release
+is not a reason for CI to go red. Unrelated to `just outdatty-check` above,
+which is about doc drift rather than dependency versions.
 
 ## MSRV
 
