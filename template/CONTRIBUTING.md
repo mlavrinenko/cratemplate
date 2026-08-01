@@ -112,7 +112,8 @@ worth knowing:
   vacuously, so any new gate arm must carry the `gate` tag to be covered.
 - There is no `--force`. To re-run a fresh rule, touch one of its inputs or
   delete its record under `.mmz/cache/` (gitignored via `.mmz/.gitignore`).
-- `mmz --status` prints every rule's freshness as a table.
+- `just status` (`mmz --status`) prints every rule's freshness as a table — what
+  a `just check` would re-run, and whether the pre-commit hook would pass now.
 - In a brand-new clone there is no `Cargo.lock` yet; cargo writes it during the
   first `just check`, so the arms that declare it record a pre-lock digest and
   miss once more on the second run. "A no-op re-run is a full hit" holds from

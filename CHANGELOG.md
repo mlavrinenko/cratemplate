@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`just status`.** One-line view of every memoized rule's freshness
+  (`mmz --status`): which arms of `just check` would re-run, and whether the
+  pre-commit hook's `mmz --is-fresh --tag gate` would pass right now. Reads
+  mmz's records only — runs no gate.
+
 ### Changed
 
 - **Git hook is tracked and auto-wired.** `.githooks/pre-commit` follows the

@@ -52,6 +52,12 @@ check:
 mmz *ARGS:
     mmz just {{ ARGS }}
 
+# Show each memoized rule's freshness — i.e. which arms of `just check` would
+# actually re-run, and whether the pre-commit hook's `mmz --is-fresh --tag
+# gate` would pass right now. Reads mmz's records; runs no gate.
+status:
+    mmz --status
+
 # Fail if a source changed without its dependents being re-confirmed
 outdatty-check:
     outdatty check --format quiet
