@@ -3,6 +3,10 @@
 ## Agent Rules
 
 - See and use [Justfile](Justfile). Add any repeatable and regular operations there.
+  `set shell` already gives every recipe line `bash -eo pipefail`, so a new recipe
+  needs no `#!/usr/bin/env bash` + `set -eo pipefail` preamble. just runs each line
+  in a fresh shell though — add a shebang only when the body needs one shell across
+  lines (a variable read back later, a `trap`).
 - At the end ensure that `just fix-check` is green.
 {% if crate_kind == "bin" -%}
 - Tests: inline `#[cfg(test)]` units; CLI/integration in `tests/` (`assert_cmd` + `predicates`). `just fix-check` auto-ejects inline tests from oversized files via `ejectest`.

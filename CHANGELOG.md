@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`mmz --is-fresh --tag gate`) is live with no manual step. Edits to the
   tracked hook take effect immediately, and the legacy `cp scripts/pre-commit
   .git/hooks/pre-commit` step is gone.
+- **Recipe shell settings are global.** The template Justfile sets
+  `shell := ["bash", "-eo", "pipefail", "-c"]` and `ignore-comments := true`,
+  so recipes no longer repeat a `#!/usr/bin/env bash` + `set -eo pipefail`
+  preamble and every line gets errexit plus pipefail (just's default `sh -cu`
+  gives neither). `cover`, `check-dry`, and `install-hooks` are plain recipes
+  now; `release` and `mutants-diff` keep a shebang because they need one shell
+  across several lines. No `-u`.
 
 ## [0.2.0] - 2026-07-31
 

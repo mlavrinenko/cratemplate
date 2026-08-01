@@ -1,5 +1,20 @@
 set quiet := true
 
+# Shell for every non-shebang recipe line. `-e` aborts the line at its first
+# failing command, `-o pipefail` makes a failure anywhere in a pipeline count
+# (neither holds in just's default `sh -cu`), so recipes need no per-recipe
+# `set -eo pipefail` preamble. No `-u`: recipe bodies interpolate `{{ }}`
+# values and read optional env overrides, where an unset name should expand
+# empty, not abort. Note that just runs each recipe LINE in a fresh shell —
+# a recipe needing one shell across several lines (a variable read back
+# later, a `trap`) still carries its own `#!/usr/bin/env bash` shebang, and
+# `set shell` does not apply to those.
+set shell := ["bash", "-eo", "pipefail", "-c"]
+
+# Keep `#` lines inside a plain recipe in the justfile instead of handing each
+# one to its own throwaway shell. Shebang recipe bodies are untouched.
+set ignore-comments := true
+
 # List available recipes
 default:
     @just --list
@@ -61,21 +76,23 @@ clippy-fix:
 build *args:
     cargo build --workspace -q {{ args }}
 
+# Paths kept out of the coverage report, shared by both report passes below.
+# main.rs is excluded — keep it thin; `just crap` excludes it too. The
+# /registry/src/ ignore keeps local and CI reporting the same set when
+# CARGO_HOME is relocated. A file-scope variable, not a shell one: `cover` has
+# no shebang, so each of its lines runs in a fresh shell.
+cover_ignore := 'src/main\.rs|/registry/src/'
+
 # Run coverage with cargo-llvm-cov. llvm-cov, unlike tarpaulin, merges the
 # profraw of child processes, so subprocess-based CLI e2e tests actually
 # attribute to the code they exercise. Instrument once (--no-report), then
-# render both reports from that profdata. main.rs is excluded — keep it thin;
-# `just crap` excludes it too. The /registry/src/ ignore keeps local and CI
-# reporting the same set when CARGO_HOME is relocated.
+# render both reports from that profdata.
 cover:
-    #!/usr/bin/env bash
-    set -eo pipefail
-    ignore='src/main\.rs|/registry/src/'
     mkdir -p target/coverage
     cargo llvm-cov --workspace --no-report
-    cargo llvm-cov report --ignore-filename-regex "$ignore" \
+    cargo llvm-cov report --ignore-filename-regex '{{ cover_ignore }}' \
         --lcov --output-path target/coverage/lcov.info
-    cargo llvm-cov report --ignore-filename-regex "$ignore" --fail-under-lines 70
+    cargo llvm-cov report --ignore-filename-regex '{{ cover_ignore }}' --fail-under-lines 70
 
 # Gate complex, undertested functions via CRAP metric. Needs lcov from `just
 # cover` first. Threshold 30 is a sane greenfield default; tune per repo.
@@ -116,8 +133,6 @@ check-file-size:
 
 # Copy-paste gate: fail on any duplicated Rust block across the crate.
 check-dry:
-    #!/usr/bin/env bash
-    set -eo pipefail
     # jscpd (the Rust port, packaged via qahq in flake.nix) fails on any
     # duplicated block of >=70 tokens, naming both spans. Fix a finding by
     # extracting a shared helper — never by shuffling tokens until the
@@ -142,8 +157,6 @@ deny:
 # take effect live (no copy to refresh). Bypass a single commit with
 # `git commit --no-verify`.
 install-hooks:
-    #!/usr/bin/env bash
-    set -eo pipefail
     git config core.hooksPath .githooks
     rm -f .git/hooks/pre-commit
     chmod +x .githooks/pre-commit
