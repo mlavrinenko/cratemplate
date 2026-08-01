@@ -185,14 +185,19 @@ release VERSION:
 # this branch's diff against main, so it needs no state file and covers new
 # files for free (every line of a new file is "touched"). A surviving MISSED
 # mutant is a real assertion gap: a line covered but not pinned.
+#
+# Parallelism defaults to 3 and is overridden from the environment
+# (`CARGO_MUTANTS_JOBS=8 just mutants-diff`). The default is resolved by just's
+# `env()` rather than a shell `export`, so it is attached to the one command
+# that reads it instead of living in the recipe's whole shell.
 mutants-diff *ARGS:
     #!/usr/bin/env bash
     set -eo pipefail
-    export CARGO_MUTANTS_JOBS="${CARGO_MUTANTS_JOBS:-3}"
     diff_file=$(mktemp)
     trap 'rm -f "$diff_file"' EXIT
     git diff "$(git merge-base main HEAD)" > "$diff_file"
-    cargo mutants --in-diff "$diff_file" {{ ARGS }}
+    CARGO_MUTANTS_JOBS='{{ env("CARGO_MUTANTS_JOBS", "3") }}' \
+        cargo mutants --in-diff "$diff_file" {{ ARGS }}
 
 # Full-file mutation sweep — a dev aid, never a gate. Extra args pass through
 # to cargo-mutants. File set and excludes come from .cargo/mutants.toml.
