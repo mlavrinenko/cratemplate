@@ -4,6 +4,22 @@
 # editing a source, review the dependents and run `just outdatty-update` to
 # record the new state; `just outdatty-check` (part of `just check`) fails until
 # you do. Tune these groups to match where your project's coupled files live.
+
+# Files that must always belong to a group. outdatty defaults to requiring
+# EVERY tracked file, which rejects this scaffold's configs, CI, licenses and
+# lockfiles that carry no cross-file coupling. List only what is hand-coupled:
+# a new source module, doc, or manifest that needs a group of its own also
+# belongs here — the `[untracked]` failure message does not say so.
+require_tracked:
+  - "src/**"
+  - "www/**"
+  - "README.md"
+  - "CHANGELOG.md"
+  - "CONTRIBUTING.md"
+  - "AGENTS.md"
+  - "Cargo.toml"
+  - "Justfile"
+  - "flake.nix"
 groups:
   # The public surface (CLI for a bin, the library API for a lib) is
   # documented by hand. Touching the code flags the user-facing docs as

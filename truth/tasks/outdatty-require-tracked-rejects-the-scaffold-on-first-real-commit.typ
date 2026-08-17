@@ -5,7 +5,11 @@
   priority: framework("ice", confidence: 0.9, ease: 8.0, impact: 7.0),
   difficulty: 2,
   estimate: (files: 2),
-  status: proposed(2026, 8, 16),
+  status: done(
+    2026,
+    8,
+    17,
+  )[require\_tracked whitelist added to template/outdatty.yaml; just validate bin and lib both green (mmz gate fresh)],
 )
 
 = Summary

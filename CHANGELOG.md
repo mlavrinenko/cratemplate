@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Generated projects pass `just check` on their first real commit.** The
+  template ships an explicit `require_tracked` in `outdatty.yaml`, listing only
+  files that carry hand-written coupling (`src/**`, `www/**`, the docs, and the
+  manifests). Without it outdatty defaults to requiring every tracked file, so
+  the scaffold's configs, CI, and lockfiles had to belong to a group for
+  `outdatty-check` to pass at all. New source modules still trip the gate — the
+  failure message now points at the manifest, which says to add them to a group.
+
 ### Added
 
 - **`just nextest` and `just outdated`.** The dev shell now ships
