@@ -1,1 +1,5 @@
 /.direnv
+
+# Scratch space for temporary artifacts (scratch notes, tool output).
+# Never tracked — anything worth keeping goes in docs/.
+var/
