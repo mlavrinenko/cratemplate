@@ -2,7 +2,7 @@
 
 [tasks]
 [[tasks.roots]]
-path = "truth/tasks"
+path = "tasks"
 name = "ct"
 derive-tags = true
 
