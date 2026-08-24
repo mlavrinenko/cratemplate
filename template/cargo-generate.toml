@@ -5,7 +5,12 @@ exclude = ["Justfile", "flake.nix", "rust-toolchain.toml", "clippy.toml", "rustf
 # crate_kind-aware (src/main.rs only exists for bin), so it needs Liquid
 # rendering. It contains no GitHub `${{ }}` expressions, so this is safe —
 # unlike the workflow files above, which must stay excluded.
-ignore = [".direnv", "flake.lock"]
+# flake.lock is deliberately NOT ignored: generated projects inherit the
+# template's validated pins (qahq, nixpkgs, …). A project bumps them with
+# `nix flake update` on its own schedule; without the lock every generated
+# project would free-resolve upstream HEAD on its first nix develop and the
+# validated toolchain combo would rot at birth.
+ignore = [".direnv"]
 
 [placeholders.gh-username]
 type = "string"

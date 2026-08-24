@@ -38,13 +38,14 @@ validate KIND='bin':
 
     cd "$WORK_DIR/$PROJECT_NAME"
 
-    # Ship the template's flake.lock into the generated project. cargo-generate
-    # ignores it (cargo-generate.toml), so without this the scratch project
-    # would free-resolve every input at upstream HEAD on its first `nix
-    # develop` — and a stale pin in template/flake.lock would rot silently
-    # (qahq pinned at outdatty 0.3.0 while outdatty.yaml used require_tracked,
-    # which only 0.4.0 knows). The gate must test exactly what ships.
-    cp "$TEMPLATE_DIR/template/flake.lock" flake.lock
+    # Assert the shipped lock actually reaches the generated project. cargo-generate
+    # ships flake.lock today (see cargo-generate.toml), but if the ignore list ever
+    # regresses, validate must fail loudly: a scratch project that free-resolves
+    # upstream HEAD would silently stop testing the template's own pins, and a
+    # stale flake.lock would rot (qahq pinned at outdatty 0.3.0 while outdatty.yaml
+    # used require_tracked, which only 0.4.0 knows).
+    test -f flake.lock || { echo "error: cargo-generate did not ship flake.lock (ignore list regressed?)" >&2; exit 1; }
+    cmp -s flake.lock "$TEMPLATE_DIR/template/flake.lock" || { echo "error: generated flake.lock differs from template/flake.lock" >&2; exit 1; }
 
     git add -A
 

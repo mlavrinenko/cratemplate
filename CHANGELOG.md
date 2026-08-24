@@ -9,16 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **`just validate` now tests the shipped `flake.lock`, and the template pins
-  qahq to v0.4.0.** cargo-generate ignores `flake.lock` (`cargo-generate.toml`),
-  so the generated scratch project used to re-resolve every input at upstream
-  HEAD on its first `nix develop` — a stale pin in `template/flake.lock`
-  (qahq v0.2.0, outdatty 0.3.0) could never trip the gate, even though any
-  project that carried the lock failed `just check` out of the box
-  (`unknown field require_tracked` — outdatty learned the field only in 0.4.0).
-  Validate now copies the lock into the scratch project before `nix develop`,
-  so the gate exercises exactly what ships; the qahq pin is bumped to v0.4.0
-  (mmz 0.10.0, outdatty 0.4.0, linecop 0.4.0).
+- **Generated projects inherit a validated `flake.lock`, and `just validate`
+  now tests exactly what ships.** cargo-generate used to drop `flake.lock`
+  (`cargo-generate.toml`), so a generated project re-resolved every input at
+  upstream HEAD on its first `nix develop` — a stale pin in
+  `template/flake.lock` (qahq v0.2.0, outdatty 0.3.0) could never trip the
+  gate, even though any project that carried the lock failed `just check` out
+  of the box (`unknown field require_tracked` — outdatty learned the field
+  only in 0.4.0). The lock now ships with every generated project (bump with
+  `nix flake update` on your own schedule), and validate asserts the
+  generated lock is byte-identical to the template's — a regression in the
+  ignore list fails loudly instead of silently stopping the gate from
+  testing the shipped pins. qahq is pinned to v0.4.0 (outdatty 0.4.0, mmz
+  0.10.0, linecop 0.4.0), with mmz now taken through qahq rather than a
+  direct input.
 - **Generated projects pass `just check` on their first real commit.** The
   template ships an explicit `require_tracked` in `outdatty.yaml`, listing only
   files that carry hand-written coupling (`src/**`, `www/**`, the docs, and the
