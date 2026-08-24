@@ -2,11 +2,6 @@
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
     qahq.url = "github:mlavrinenko/qahq";
-    # Memoized command runner, taken direct rather than through qahq: the
-    # `tags:` this project's .mmz/config.yaml uses need mmz >= 0.5.0, and
-    # qahq's own pin lags. Drop this input and use `qahq.packages.*.mmz` once
-    # qahq ships >= 0.5.0.
-    mmz.url = "github:mlavrinenko/mmz";
     naersk = {
       url = "github:nix-community/naersk";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -18,7 +13,6 @@
     {
       qahq,
       flake-utils,
-      mmz,
       naersk,
       nixpkgs,
       ...
@@ -54,13 +48,13 @@
             qahq.packages.${system}.ejectest
             qahq.packages.${system}.jscpd
             qahq.packages.${system}.linecop
-            qahq.packages.${system}.outdatty
             # Memoized command runner. Every arm of `just check` runs as
             # `mmz just <subgate>`, so an arm whose declared inputs are
             # unchanged since it last passed is skipped. Rules and their input
-            # scopes live in .mmz/config.yaml; `mmz --is-fresh --tag gate`
+            # scopes live in .mmz/config.yaml. `mmz --is-fresh --tag gate`
             # asserts a prior pass without running anything.
-            mmz.packages.${system}.default
+            qahq.packages.${system}.mmz
+            qahq.packages.${system}.outdatty
           ] ++ (with pkgs; [
             rustc
             cargo
