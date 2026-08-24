@@ -543,6 +543,24 @@
         "type": "github"
       }
     },
+    "flake-parts": {
+      "inputs": {
+        "nixpkgs-lib": "nixpkgs-lib"
+      },
+      "locked": {
+        "lastModified": 1772408722,
+        "narHash": "sha256-rHuJtdcOjK7rAHpHphUb1iCvgkU3GpfvicLMwwnfMT0=",
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "rev": "f20dc5d9b8027381c474144ecabc9034d6a839a3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -1076,14 +1094,15 @@
         "flake-utils": "flake-utils_2",
         "naersk": "naersk",
         "nixpkgs": "nixpkgs",
-        "qahq": "qahq"
+        "qahq": "qahq",
+        "tola": "tola"
       },
       "locked": {
-        "lastModified": 1784888223,
-        "narHash": "sha256-rIkSJdqnVK2WjFiCJnDfgc1+dGirVEa+qIghaFyZELs=",
+        "lastModified": 1787430638,
+        "narHash": "sha256-dCPQlNu5HsRkbC8iY8IbYZgqRqdpLKjNlPNMCdv/KyI=",
         "owner": "mlavrinenko",
         "repo": "mmz",
-        "rev": "7253e16a62b4fd7d2392b2de0d3b69ba6d9f2de5",
+        "rev": "1b4593cf21b84a57b3a06e01f47684b6ef1d320f",
         "type": "github"
       },
       "original": {
@@ -1557,6 +1576,21 @@
         "type": "github"
       }
     },
+    "nixpkgs-lib": {
+      "locked": {
+        "lastModified": 1772328832,
+        "narHash": "sha256-e+/T/pmEkLP6BHhYjx6GmwP5ivonQQn0bJdH9YrRB+Q=",
+        "owner": "nix-community",
+        "repo": "nixpkgs.lib",
+        "rev": "c185c7a5e5dd8f9add5b2f8ebeff00888b070742",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nixpkgs.lib",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1782918843,
@@ -1574,6 +1608,22 @@
       }
     },
     "nixpkgs_3": {
+      "locked": {
+        "lastModified": 1772465433,
+        "narHash": "sha256-ywy9troNEfpgh0Ee+zaV1UTgU8kYBVKtvPSxh6clYGU=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "c581273b8d5bdf1c6ce7e0a54da9841e6a763913",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-25.11",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_4": {
       "locked": {
         "lastModified": 1771923393,
         "narHash": "sha256-Fy0+UXELv9hOE8WjYhJt8fMDLYTU2Dqn3cX4BwoGBos=",
@@ -1670,7 +1720,7 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "mmz": "mmz",
-        "nixpkgs": "nixpkgs_3"
+        "nixpkgs": "nixpkgs_4"
       }
     },
     "rust-analyzer-src": {
@@ -1962,6 +2012,28 @@
         "type": "github"
       }
     },
+    "rust-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "mmz",
+          "tola",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1772593411,
+        "narHash": "sha256-47WOnCSyOL6AghZiMIJaTLWM359DHe3be9R1cNCdGUE=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "a741b36b77440f5db15fcf2ab6d7d592d2f9ee8f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
     "systems": {
       "locked": {
         "lastModified": 1681028828,
@@ -2229,6 +2301,27 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "tola": {
+      "inputs": {
+        "flake-parts": "flake-parts",
+        "nixpkgs": "nixpkgs_3",
+        "rust-overlay": "rust-overlay"
+      },
+      "locked": {
+        "lastModified": 1773855057,
+        "narHash": "sha256-zgPKsIRXp5na2d0X7j5+9xJBGFSlvIKIRmzVVo/dcLk=",
+        "owner": "tola-rs",
+        "repo": "tola-ssg",
+        "rev": "9adcff02f1b8f1682d74e039173a67869ad66ed2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "tola-rs",
+        "ref": "v0.7.1",
+        "repo": "tola-ssg",
         "type": "github"
       }
     }
