@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`just fix-check` no longer goes red over a near-limit Markdown file.**
+  `just eject` piped `linecop --baseline 90 --format paths` into ejectest under
+  `bash -eo pipefail`; linecop exits 1 to FLAG files at/over the baseline (a
+  finding, not a failure to run), so the pipeline died on the producer before
+  ejectest ever ran — any file at ≥90% of its limit red the whole
+  `fix-check`, even when nothing was ejectable (the scan also handed Markdown
+  paths to a tool that moves inline Rust test modules). The recipe now masks
+  linecop's finding-exit and narrows the scan to `*.rs`. `just validate` grows
+  a generated project's README.md past the 90% baseline and requires
+  `just fix-check` to stay green.
+- **`just validate` re-asserts the shipped `flake.lock` after the nix block.**
+  `nix develop` silently re-resolves (and rewrites `flake.lock` in place) if
+  the lock ever drifts from `flake.nix`'s inputs; the pre-nix byte-identity
+  check only proved the lock shipped. A post-nix `cmp` fails the gate instead
+  of letting it test upstream HEAD on a re-resolved lock.
 - **Generated projects inherit a validated `flake.lock`, and `just validate`
   now tests exactly what ships.** cargo-generate used to drop `flake.lock`
   (`cargo-generate.toml`), so a generated project re-resolved every input at

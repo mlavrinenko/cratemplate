@@ -68,6 +68,20 @@ validate KIND='bin':
         just check
         mmz --is-fresh --tag gate
 
+        # Regression for the eject recipe: a Markdown file at >= the eject
+        # baseline (90% of the 200-line Markdown limit) must not red `just
+        # fix-check`. linecop's `--baseline` exit-1 is informational (a finding,
+        # not a failure to run), and the eject scan is Rust-only — it used to
+        # die on the producer before ejectest even ran. Grow README.md past the
+        # baseline, then run the real fix step; the gate must stay green.
+        echo "--- Regression: near-limit Markdown must not red just fix-check"
+        n=0
+        while [ "$(wc -l < README.md)" -lt 180 ] && [ "$n" -lt 500 ]; do
+            printf '%s\n' "<!-- near-limit regression filler -->" >> README.md
+            n=$((n + 1))
+        done
+        just fix-check
+
         just install-hooks
         test -x "$(git rev-parse --git-path hooks/pre-commit)"
 
@@ -83,6 +97,13 @@ validate KIND='bin':
         git add -A
         nix build .#default
     INNER
+
+    # `nix develop` silently re-resolves (and rewrites flake.lock in place) if
+    # the shipped lock ever drifts from flake.nix's inputs. The pre-nix cmp
+    # above proves only that the lock SHIPPED; this one proves nothing
+    # re-resolved — a re-resolved lock would differ from the template's, and
+    # the gate would have tested upstream HEAD instead of the shipped pins.
+    cmp -s flake.lock "$TEMPLATE_DIR/template/flake.lock" || { echo "error: nix develop rewrote flake.lock (input drift?) — generated lock no longer matches template/flake.lock" >&2; exit 1; }
 
     echo ""
     echo "=== All checks passed ==="

@@ -129,8 +129,29 @@ file-sizes:
 
 # Eject inline tests from Rust files nearing the linecop limit, so they stay
 # under it without losing the inline-test workflow. Runs as part of `fix-check`.
+# linecop's `--baseline` exit is informational: it exits 1 merely to FLAG files
+# at/over the threshold, not because it failed to run — so the recipe must not
+# die on the very finding it exists to fix (masked below). The scan is also
+# narrowed to Rust: ejectest moves inline RUST test modules, and a near-limit
+# Markdown file has nothing to move.
 eject PCT='90':
-    linecop --baseline {{ PCT }} --format paths | ejectest apply src --files-from - --lenient
+    #!/usr/bin/env bash
+    set -eo pipefail
+
+    # Mask linecop's finding-exit. `--baseline` is advisory by design — the
+    # hard over-limit gate is `just check-file-size`, which runs bare linecop —
+    # so exit 1 here means "found files to act on", and must not abort the
+    # pipeline before ejectest sees them.
+    paths="$(linecop --baseline {{ PCT }} --format paths || true)"
+
+    # Rust only: paths outside `src` and non-`.rs` files are dropped by
+    # ejectest's own --lenient root check anyway, but a Markdown path must not
+    # reach a tool that moves inline Rust test modules at all.
+    rust_paths="$(printf '%s\n' "$paths" | grep '\.rs$' || true)"
+
+    if [ -n "$rust_paths" ]; then
+        printf '%s\n' "$rust_paths" | ejectest apply src --files-from - --lenient
+    fi
 
 # Check for oversized files (fails if any exceed limits)
 check-file-size:
