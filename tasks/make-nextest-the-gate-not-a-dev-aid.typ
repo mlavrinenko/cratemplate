@@ -5,7 +5,11 @@
   priority: framework("ice", confidence: 0.8, ease: 6.0, impact: 6.0),
   difficulty: 3,
   estimate: (files: 4),
-  status: proposed(2026, 8, 28),
+  status: done(
+    2026,
+    8,
+    30,
+  )[just mmz validate bin and lib both pass (recorded fresh). Manual checks in-session: doctest pass runs (doctest added to a scratch project and run via just test), a red suite under --status-level fail prints full failure output and exits 100, just count-tests prints the nextest summary count, just nextest is gone (recipe error), filtered just test \<filter> passes ARGS to both passes.],
 )
 
 = Summary

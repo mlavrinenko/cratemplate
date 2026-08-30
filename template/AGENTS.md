@@ -37,9 +37,12 @@
   allow-list deliberately; never to silence a finding. `just outdated`
   (cargo-outdated) is network-bound too and reports newer upstream releases;
   it is a dev aid, never a gate.
-- `just nextest` runs the suite under cargo-nextest for readable output and
-  per-test isolation. It skips doctests, so `just test` — not nextest — remains
-  the gate and the command `just cover` instruments.
+- `just test` gates the suite on cargo-nextest with `--status-level fail` — a
+  green run prints only the summary, a red one prints each failure's full
+  output — plus a `cargo test --doc` pass, because nextest does not run
+  doctests. `just cover` instruments that same runner via `cargo llvm-cov
+  nextest`, so a test cannot pass under the gate and fail under coverage (or
+  the reverse) with nothing saying so.
 - Eating your own dog food: the tool should use itself if applicable.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for project conventions and code standards.

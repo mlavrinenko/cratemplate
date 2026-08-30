@@ -35,10 +35,10 @@ check: (mmz "fmt-check") (mmz "clippy") (mmz "test") (mmz "machete") (mmz "check
 # Wrap a just recipe in mmz: `just mmz fmt-check` runs `mmz just fmt-check`. The
 # double hop makes mmz the cache identity (rule name `just <recipe>` in
 # .mmz/config.yaml), uniform across every sub-gate of `just check`. `just test
-# <filter>` (a developer query, no `mmz`) bypasses this recipe and stays plain
-# `cargo test` with ARGS — and the `just test` rule is `match: exact`, so even a
-# stray `just mmz test <filter>` cannot record the full-suite identity off a
-# filtered subset.
+# <filter>` (a developer query, no `mmz`) bypasses this recipe and runs the
+# suite directly with ARGS passed to both passes — and the `just test` rule is
+# `match: exact`, so even a stray `just mmz test <filter>` cannot record the
+# full-suite identity off a filtered subset.
 mmz *ARGS:
     mmz just {{ ARGS }}
 
@@ -56,16 +56,15 @@ outdatty-check:
 outdatty-update:
     outdatty update
 
-# Run tests only
+# Run tests only. The gate runs the suite through cargo-nextest — one process
+# per test, so a panicking or hanging test is isolated — with `--status-level
+# fail`: a green run prints only the run header and the summary line, a red one
+# prints every failure's full output. nextest does not run doctests, so a second
+# pass covers them: a project with none pays a fast `running 0 tests` no-op.
+# ARGS pass through to both passes (a plain substring filter works for both).
 test *ARGS:
-    cargo test --workspace {{ ARGS }}
-
-# Run tests through cargo-nextest: one process per test, so a panicking or
-# hanging test is isolated and the output is far easier to read. A dev aid, not
-# a gate — `just test` and `just cover` stay on `cargo test`, which runs
-# doctests (nextest does not) and is what cargo-llvm-cov instruments here.
-nextest *ARGS:
-    cargo nextest run --workspace {{ ARGS }}
+    cargo nextest run --workspace --status-level fail {{ ARGS }}
+    cargo test --workspace --doc {{ ARGS }}
 
 # Run clippy only
 clippy:
@@ -86,13 +85,17 @@ build *args:
 # no shebang, so each of its lines runs in a fresh shell.
 cover_ignore := 'src/main\.rs|/registry/src/'
 
-# Run coverage with cargo-llvm-cov. llvm-cov, unlike tarpaulin, merges the
-# profraw of child processes, so subprocess-based CLI e2e tests actually
-# attribute to the code they exercise. Instrument once (--no-report), then
-# render both reports from that profdata.
+# Run coverage with cargo-llvm-cov, instrumenting the SAME runner as `just
+# test` (`cargo llvm-cov nextest`). Process-per-test and shared-process are
+# different execution models: a gate that tests one while coverage exercises
+# the other can pass a test that fails under the other runner with nothing
+# saying so. llvm-cov, unlike tarpaulin, merges the profraw of child
+# processes, so subprocess-based CLI e2e tests actually attribute to the code
+# they exercise. Instrument once (--no-report), then render both reports from
+# that profdata.
 cover:
     mkdir -p target/coverage
-    cargo llvm-cov --workspace --no-report
+    cargo llvm-cov nextest --workspace --no-report
     cargo llvm-cov report --ignore-filename-regex '{{ cover_ignore }}' \
         --lcov --output-path target/coverage/lcov.info
     cargo llvm-cov report --ignore-filename-regex '{{ cover_ignore }}' --fail-under-lines 70
@@ -115,11 +118,14 @@ fmt-check:
 machete:
     cargo machete
 
-# Count tests across workspace. Under the global pipefail shell a suite that
-# fails to build or run takes the recipe down with it — a count scraped from a
-# broken run is not worth reporting.
+# Count tests across the workspace, scraped from nextest's summary line ("N
+# tests run:" — the same runner `just test` gates on). Doctests are not
+# counted: only `--json` would report them, and a count is a dev aid, not a
+# gate. Under the global pipefail shell a suite that fails to build or run
+# takes the recipe down with it — a count scraped from a broken run is not
+# worth reporting.
 count-tests:
-    cargo test --workspace 2>&1 | grep "test result:" | awk '{sum += $4} END {print sum " tests"}'
+    cargo nextest run --workspace 2>&1 | grep -o '[0-9]\+ tests run' | awk '{sum += $1} END {print sum " tests"}'
 
 # Show top 20 files by line count. `awk NR<=20` and not `head -20`: head exits
 # after its 20th line, which SIGPIPEs sort once the listing outgrows the pipe

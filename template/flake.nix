@@ -62,9 +62,11 @@
             cargo-machete
             cargo-mutants
             cargo-deny
-            # Dev aids behind `just nextest` / `just outdated`, deliberately
-            # not wired into `just check`: nextest does not run doctests, and
-            # a new upstream release is not a reason for a gate to go red.
+            # cargo-nextest is the test runner `just test` gates on — doctests
+            # run in a separate `cargo test --doc` pass, which is why `just
+            # test` spells out both. cargo-outdated is a dev aid, deliberately
+            # not wired into `just check`: a new upstream release is not a
+            # reason for a gate to go red.
             cargo-nextest
             cargo-outdated
             clippy

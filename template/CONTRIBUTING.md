@@ -45,10 +45,12 @@ where relevant.
 {% if crate_kind == "lib" -%}
 - Integration tests that exercise the public API across modules live in `tests/`.
 {% endif -%}
-- Run the full suite with `just test`. `just nextest` runs the same tests through
-  [cargo-nextest](https://nexte.st) — one process per test, so a panic or a hang is
-  isolated and the output is easier to read. It does not run doctests, so `just test`
-  stays the gate and what `just cover` instruments.
+- Run the full suite with `just test`: `cargo nextest run --status-level fail`
+  (one process per test, so a panic or hang is isolated; a green run prints only
+  the summary, a failure prints the full output) plus `cargo test --doc` for
+  doctests, which [cargo-nextest](https://nexte.st) does not run. `just cover`
+  instruments the same nextest runner, so the gate and coverage can't disagree
+  about whether a test passes.
 - As a file approaches the linecop limit, `just fix-check` ejects its inline
   `#[cfg(test)]` module into a sibling `_tests.rs` file via
   [ejectest](https://github.com/mlavrinenko/ejectest), driven by `linecop --baseline`.
