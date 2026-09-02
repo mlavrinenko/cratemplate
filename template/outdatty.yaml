@@ -43,12 +43,16 @@ groups:
       - CHANGELOG.md
 
   # The dev tooling and conventions documented for contributors track the
-  # files that define them: the dev shell, the recipes, and the gate
-  # memoization rules that decide when a recipe re-runs.
+  # files that define them: the dev shell, the recipes, the test runner's own
+  # profile, and the gate memoization rules that decide when a recipe re-runs.
+  # `.config/nextest.toml` is a recipe body in practice — `status-level` lives
+  # there because `cargo llvm-cov nextest` accepts the flag and ignores it — so
+  # an edit to it changes what CONTRIBUTING.md and AGENTS.md describe.
   - name: dev-docs
     source:
       - flake.nix
       - Justfile
+      - .config/nextest.toml
       - .mmz/config.yaml
     dependents:
       - CONTRIBUTING.md

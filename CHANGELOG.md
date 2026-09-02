@@ -9,6 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Four gates whose output cost more than it was worth**, each measured on a
+  real project built from this template and each fixed at the source rather than
+  filtered:
+  - `just deny` printed a full inclusion tree per crate it mentioned — **1411
+    lines** to say `advisories ok, bans ok, licenses ok`, against 145 with
+    `--hide-inclusion-graph` and the identical verdict.
+  - `just crap` printed **every analyzed function**, passing ones included:
+    3532 lines to report success, 10 with `--min 30` matched to the threshold.
+    A red run still names every offender.
+  - `just cover` printed one `PASS` line per test — **2316 lines, 2137 of them
+    `PASS`** — because `cargo llvm-cov nextest` accepts `--status-level fail`
+    and ignores it. The level moved to `.config/nextest.toml`, where both
+    runners read it; 179 lines, same verdict, failures still printed in full.
+    The file is a `gates-meta` mmz input, since it decides what the suite
+    prints and, the day it grows retries or a default filter, what it runs.
+  - `just cover` also merged profraw from binaries that no longer exist: the
+    `--no-report` + separate `report` split deliberately keeps the pile so runs
+    can be merged, so a long-lived checkout scored deleted code and reported a
+    workspace total several points below the truth. It fails toward pessimism,
+    which no floor complains about. `cargo llvm-cov clean --workspace` now runs
+    first.
+- **`just crap` scored whatever lcov happened to be on disk.** cargo-crap's
+  `--missing pessimistic` grades a function with no coverage record as 0%, so a
+  report older than the tree makes every file added since the last `just cover`
+  look completely untested — measured elsewhere at ten failures naming real
+  functions, every one an artifact, where `just cover` then reported one and
+  exit 0. It now refuses a stale report through `just _lcov-stale-reason`,
+  naming the remedy and printing no table. Deliberately *not* a `cover`
+  prerequisite: that recipe is minutes of instrumented CPU and this gate is
+  seconds, so re-reading the existing report has to stay possible. The same
+  `--missing pessimistic` rule is why the gate now excludes `tests/**` and every
+  ejected `*_tests.rs` — llvm-cov instruments the code under test, not the
+  suite, so those files have no record and the gate was grading test helpers.
 - **`just fix-check` no longer goes red over a near-limit Markdown file.**
   `just eject` piped `linecop --baseline 90 --format paths` into ejectest under
   `bash -eo pipefail`; linecop exits 1 to FLAG files at/over the baseline (a

@@ -93,18 +93,96 @@ cover_ignore := 'src/main\.rs|/registry/src/'
 # processes, so subprocess-based CLI e2e tests actually attribute to the code
 # they exercise. Instrument once (--no-report), then render both reports from
 # that profdata.
+#
+# It carries no `--status-level fail`, and that absence is deliberate:
+# `cargo llvm-cov nextest` accepts the flag and ignores it. The setting lives in
+# `.config/nextest.toml` instead, where both runners read it — a flag that is
+# accepted and ignored is worse than one that is absent, because the recipe then
+# claims something the output disproves.
+#
+# `clean --workspace` first, and it is not tidiness. The `--no-report` +
+# separate `report` split does NOT discard earlier profraw, so a long-lived
+# checkout merges coverage maps from binaries that no longer exist. Measured on
+# a real project: a 106-line file scored as **357 instrumented lines at 21.65%**
+# — the pre-split version, still counted weeks after it stopped existing — and a
+# workspace headline of 87.58% where the tree was actually 93.45%. It fails
+# toward pessimism, so a gate with a floor never complains; what it does instead
+# is make every fresh worktree disagree with the main checkout.
 cover:
     mkdir -p target/coverage
+    cargo llvm-cov clean --workspace
     cargo llvm-cov nextest --workspace --no-report
     cargo llvm-cov report --ignore-filename-regex '{{ cover_ignore }}' \
         --lcov --output-path target/coverage/lcov.info
     cargo llvm-cov report --ignore-filename-regex '{{ cover_ignore }}' --fail-under-lines 70
 
 # Gate complex, undertested functions via CRAP metric. Needs lcov from `just
-# cover` first. Threshold 30 is a sane greenfield default; tune per repo.
-# `--exclude main.rs` is harmless for libs (where the file doesn't exist).
+# cover` first, and REFUSES a stale one rather than scoring it — see
+# `_lcov-stale-reason` below. Threshold 30 is a sane greenfield default; tune
+# per repo. `--exclude main.rs` is harmless for libs (where the file doesn't
+# exist).
+#
+# Everything else here is one bug in three disguises. cargo-crap's default
+# `--missing pessimistic` scores a function with NO coverage record as 0%, and
+# three kinds of file have no record:
+#
+#   - Test code. llvm-cov instruments the code under test, not the suite, so
+#     nothing under `tests/` and no ejected `*_tests.rs` has a record. Without
+#     these excludes the gate grades your test helpers and can fail on a
+#     branchy TEST — measured elsewhere at 101 files scored against a
+#     measurement nobody took.
+#   - Anything the report was never asked to cover. Keep `--workspace` and the
+#     `-p`/exclude set here in step with what `cover` above renders: a member
+#     built for another target (a wasm client, say) is uninstrumented, so
+#     `--workspace` grades a whole crate at 0%.
+#   - Every file newer than the lcov itself, which is what `_lcov-stale-reason`
+#     catches.
+#
+# `--min 30` matched to `--threshold 30` is what makes a green run quiet: the
+# table prints only what is at or above the cutoff, so there is nothing to say
+# when nothing is wrong, and a red run still names every offender. Measured
+# elsewhere at **3532 lines to report success** — every analyzed function,
+# passing ones included — against 10 with the flag.
 crap:
-    cargo crap --lcov target/coverage/lcov.info --workspace --exclude 'src/main.rs' --threshold 30 --fail-above
+    #!/usr/bin/env bash
+    set -eo pipefail
+    reason=$(just _lcov-stale-reason)
+    if [ -n "$reason" ]; then
+        echo "just crap: $reason — run \`just cover\` first" >&2
+        echo "  (a source the lcov never saw scores as 0% covered, not as unknown)" >&2
+        exit 1
+    fi
+    cargo crap --lcov target/coverage/lcov.info --workspace \
+        --exclude 'src/main.rs' --exclude 'tests/**' --exclude '**/*_tests.rs' \
+        --min 30 --threshold 30 --fail-above
+
+# Is target/coverage/lcov.info usable against the tree in front of it? Empty
+# stdout means yes; any other line names why not. It ALWAYS exits 0 — the exit
+# status is not the channel, so a caller that treats a reason as ordinary does
+# not also get just's own `error: Recipe ... failed` line. One recipe rather
+# than a copied `find`, because two staleness tests that could disagree are
+# worse than none.
+#
+# The set is what `cover` measures plus what exercises it: `src` is rendered,
+# `tests` is the instrument, so a changed test moves the coverage of files it
+# never edited. Extend it when a workspace member's sources land outside `src/`.
+#
+# Why a refusal and not a `cover` dependency: that recipe is minutes of
+# instrumented CPU and this gate is seconds, so someone iterating on one
+# function's tests must be able to re-read the existing report. The refusal says
+# the number would be a lie and leaves paying for a true one to the caller.
+_lcov-stale-reason:
+    #!/usr/bin/env bash
+    set -eo pipefail
+    lcov=target/coverage/lcov.info
+    if [ ! -f "$lcov" ]; then
+        echo "$lcov is missing"
+        exit 0
+    fi
+    newer=$(find src tests -name '*.rs' -newer "$lcov" -print -quit)
+    if [ -n "$newer" ]; then
+        echo "$lcov predates $newer"
+    fi
 
 # Format code
 fmt:
@@ -179,8 +257,16 @@ check-dry:
 # network and has no business blocking an offline commit. CI runs it in its own
 # job, and `just validate` (in the template repo) runs it against a freshly
 # generated project, so deny.toml can't silently rot out of schema.
+#
+# `--hide-inclusion-graph` because the default prints the FULL inclusion tree
+# for every crate it has anything to say about, and a `bans` policy warns once
+# per duplicate version in the lock. Measured on a real project: **1411 lines
+# to say `advisories ok, bans ok, licenses ok`**, against 145 with the flag and
+# the identical verdict. The graph is what you want when you are chasing one
+# finding, not what you want on every green run — re-run without the flag then,
+# which is one word and a fresh answer.
 deny:
-    cargo deny check advisories licenses bans
+    cargo deny check --hide-inclusion-graph advisories licenses bans
 
 # List dependencies with newer versions available. Needs network, and is a dev
 # aid rather than a gate: an upstream release is not a reason for CI to go red.

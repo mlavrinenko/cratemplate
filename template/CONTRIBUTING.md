@@ -50,7 +50,10 @@ where relevant.
   the summary, a failure prints the full output) plus `cargo test --doc` for
   doctests, which [cargo-nextest](https://nexte.st) does not run. `just cover`
   instruments the same nextest runner, so the gate and coverage can't disagree
-  about whether a test passes.
+  about whether a test passes. The output level lives in
+  [.config/nextest.toml](.config/nextest.toml), not in the recipe: `cargo
+  llvm-cov nextest` accepts `--status-level fail` and ignores it, so a coverage
+  run printed one `PASS` line per test until the profile moved there.
 - As a file approaches the linecop limit, `just fix-check` ejects its inline
   `#[cfg(test)]` module into a sibling `_tests.rs` file via
   [ejectest](https://github.com/mlavrinenko/ejectest), driven by `linecop --baseline`.
@@ -60,7 +63,11 @@ where relevant.
 
 Minimum 70% line coverage enforced via `cargo-llvm-cov`. Run `just cover` to check.
 llvm-cov merges the profraw of child processes, so subprocess-based e2e tests
-attribute correctly — unlike tarpaulin, which misses them.
+attribute correctly — unlike tarpaulin, which misses them. It starts with
+`cargo llvm-cov clean --workspace`, and that line is not tidiness: `--no-report`
+deliberately keeps the profraw pile so runs can be merged, so without the clean
+a long-lived checkout scores binaries that no longer exist. Never trade it for
+speed — it fails toward pessimism, which no floor complains about.
 {%- if crate_kind == "bin" %}
 `main.rs` is excluded from coverage — keep it thin and move testable logic to `lib.rs`.
 {%- endif %}
@@ -70,10 +77,19 @@ attribute correctly — unlike tarpaulin, which misses them.
 `just crap` scores each function by the Change Risk Anti-Patterns metric
 (cyclomatic complexity weighted by test coverage) and fails above 30. A global
 coverage threshold can stay green while one branchy, untested function rots;
-CRAP catches that. It reads `target/coverage/lcov.info`, so run `just cover`
-first (CI and `just validate` chain them). Fix a flagged function by adding
-tests or reducing its branching. Tune the threshold per repo via `--threshold`
-or a `.cargo-crap.toml`.
+CRAP catches that. Fix a flagged function by adding tests or reducing its
+branching. Tune the threshold per repo via `--threshold` or a `.cargo-crap.toml`.
+
+It reads `target/coverage/lcov.info` and **refuses a stale one** rather than
+scoring it, because cargo-crap's `--missing pessimistic` grades a function with
+no coverage record as 0% — so every file added since the last `just cover` reads
+as completely untested and arrives as a plausible finding. `just
+_lcov-stale-reason` is that test; run `just cover` first (CI and `just validate`
+chain them). The same rule is why `tests/**` and every ejected `*_tests.rs` are
+excluded: llvm-cov instruments the code under test, not the suite, so without
+those excludes the gate grades your test helpers. `--min 30`, matched to the
+threshold, is what keeps a green run quiet — the table then prints only what
+fails, and a red run still names every offender.
 
 ## File Size Limits
 
@@ -137,7 +153,10 @@ detector loses the scent.
 `just deny` runs `cargo-deny` over advisories, the license allow-list, and
 dependency bans. It is deliberately not part of `just check`: it fetches the
 advisory database, so it needs network and would make an offline commit fail.
-CI runs it in its own job.
+CI runs it in its own job. The recipe passes `--hide-inclusion-graph`: the
+default prints a full inclusion tree per crate it mentions, so a green run can
+be 1411 lines to say `advisories ok, bans ok, licenses ok`. Drop the flag when
+you are chasing one finding and want the tree.
 
 The policy lives in [deny.toml](deny.toml). A dependency under a license not in
 `licenses.allow` fails the check — add one deliberately, not to silence a
