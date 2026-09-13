@@ -1,7 +1,10 @@
 # cratemplate maintenance recipes
 
 # Memoize a just recipe in mmz. `just mmz validate bin` skips if
-# template/ is unchanged since the last passing run.
+# template/ is unchanged since the last passing run. `[no-exit-message]`: on a
+# miss mmz prints its own reason, and just's `error: Recipe 'mmz' failed` line
+# above the real output only buries it.
+[no-exit-message]
 mmz *ARGS:
     mmz just {{ ARGS }}
 
@@ -60,6 +63,15 @@ validate KIND='bin':
         # The gates below are only meaningful inside the dev shell. If this
         # block ever escapes it, fail loudly instead of misreporting.
         command -v cargo >/dev/null || { echo "not in the dev shell" >&2; exit 1; }
+
+        # A host BASH_ENV that re-runs direnv (NixOS ships one at /etc/bash_env)
+        # mishandles the scratch project's blocked `.envrc` in every
+        # non-interactive `bash -c` that `just` spawns: the hook leaves the
+        # shell without the dev shell's PATH, so a recipe dies with
+        # `outdatty: command not found` while `sh -c 'command -v outdatty'` in
+        # the same shell finds it. The gates need the dev shell, not the host's
+        # shell startup.
+        unset BASH_ENV
 
         just outdatty-update
         just check
