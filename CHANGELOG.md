@@ -57,6 +57,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the lock ever drifts from `flake.nix`'s inputs; the pre-nix byte-identity
   check only proved the lock shipped. A post-nix `cmp` fails the gate instead
   of letting it test upstream HEAD on a re-resolved lock.
+- **Three leftovers from the output port**, each in the template itself:
+  `[no-exit-message]` on the root and template `mmz` recipes, so just's own
+  `error: Recipe 'mmz' failed` line stops burying the reason a gate actually
+  printed; `just count-tests` reads nextest's JSON listing instead of running
+  the whole suite to scrape `N tests run` out of its summary; and `just test`
+  forwards ARGS with `[positional-arguments]`, so a filter containing a space
+  reaches each pass as one argument and a wildcard is not re-globbed. The
+  template shell grows `jq` for the listing.
 - **Generated projects inherit a validated `flake.lock`, and `just validate`
   now tests exactly what ships.** cargo-generate used to drop `flake.lock`
   (`cargo-generate.toml`), so a generated project re-resolved every input at

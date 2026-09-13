@@ -39,6 +39,10 @@ check: (mmz "fmt-check") (mmz "clippy") (mmz "test") (mmz "machete") (mmz "check
 # suite directly with ARGS passed to both passes — and the `just test` rule is
 # `match: exact`, so even a stray `just mmz test <filter>` cannot record the
 # full-suite identity off a filtered subset.
+#
+# `[no-exit-message]`: on a miss mmz prints its own reason, and just's
+# `error: Recipe 'mmz' failed` line above the real output only buries it.
+[no-exit-message]
 mmz *ARGS:
     mmz just {{ ARGS }}
 
@@ -61,10 +65,14 @@ outdatty-update:
 # fail`: a green run prints only the run header and the summary line, a red one
 # prints every failure's full output. nextest does not run doctests, so a second
 # pass covers them: a project with none pays a fast `running 0 tests` no-op.
-# ARGS pass through to both passes (a plain substring filter works for both).
+#
+# `[positional-arguments]` + `"$@"`: ARGS still reach both passes (a plain
+# substring filter works for both), but interpolating the variadic would
+# re-split a filter containing spaces and re-glob a wildcard.
+[positional-arguments]
 test *ARGS:
-    cargo nextest run --workspace --status-level fail {{ ARGS }}
-    cargo test --workspace --doc {{ ARGS }}
+    cargo nextest run --workspace --status-level fail "$@"
+    cargo test --workspace --doc "$@"
 
 # Run clippy only
 clippy:
@@ -196,14 +204,15 @@ fmt-check:
 machete:
     cargo machete
 
-# Count tests across the workspace, scraped from nextest's summary line ("N
-# tests run:" — the same runner `just test` gates on). Doctests are not
+# Count tests across the workspace. `cargo nextest list` reads the suite
+# without running it, so the count no longer depends on the runner's output
+# format — the old summary scrape ran the whole suite just to count it.
+# Ignored tests are excluded, like nextest's own summary. Doctests are not
 # counted: only `--json` would report them, and a count is a dev aid, not a
-# gate. Under the global pipefail shell a suite that fails to build or run
-# takes the recipe down with it — a count scraped from a broken run is not
-# worth reporting.
+# gate.
 count-tests:
-    cargo nextest run --workspace 2>&1 | grep -o '[0-9]\+ tests run' | awk '{sum += $1} END {print sum " tests"}'
+    cargo nextest list --workspace --message-format json \
+        | jq -r '[.["rust-suites"][].testcases[] | select(.ignored == false)] | "\(length) tests"'
 
 # Show top 20 files by line count. `awk NR<=20` and not `head -20`: head exits
 # after its 20th line, which SIGPIPEs sort once the listing outgrows the pipe

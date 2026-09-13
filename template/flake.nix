@@ -69,6 +69,8 @@
             # reason for a gate to go red.
             cargo-nextest
             cargo-outdated
+            # `just count-tests` parses nextest's JSON listing with jq.
+            jq
             clippy
             rustfmt
             just
