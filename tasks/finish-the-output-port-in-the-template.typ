@@ -5,7 +5,7 @@
   priority: framework("ice", confidence: 0.9, ease: 8.0, impact: 5.0),
   difficulty: 2,
   estimate: (files: 3),
-  status: proposed(2026, 9, 13),
+  status: done(2026, 9, 13)[both validates green; gate fresh],
 )
 
 = Summary
@@ -30,3 +30,16 @@ runs the whole suite to scrape nextest's summary, and `just test` interpolates
 
 Switch the template's doctest pairing: a generated library is exactly the case
 the two-pass exists for, so it stays.
+
+= Outcome
+
+- Commits 3ecc7c6 (root `mmz` and the validate `BASH_ENV` fix) and ca92625
+  (template `mmz`, list-based `count-tests` with `jq`, positional args).
+- `just mmz validate bin` and `just mmz validate lib` both end in
+  `=== All checks passed ===` and are recorded with the gate fresh. The bin run
+  only got there after the crates.io fixed-output derivations were healed by
+  hand (the host's fetchurl was answered with 403); the box's store now carries
+  them, so both kinds build sandboxed.
+- Two environment notes worth keeping: the host `BASH_ENV` has to be unset for
+  the inner shell, and `jq` is now part of the template's dev shell, so a
+  generated project's `just count-tests` works on a fresh checkout.
