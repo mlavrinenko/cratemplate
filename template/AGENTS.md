@@ -27,8 +27,9 @@
   quiet, and a miss must stream its output.
 - Be careful with the context. Omit non-necessary command outputs using `chronic` or `grep`.
 - [outdatty.yaml](outdatty.yaml) couples sources to dependents. When `just check`
-  reports drift, update the listed dependents, then run `just outdatty-update`
-  to re-confirm. Add a group whenever you introduce files that must stay in sync.
+  reports drift, update the listed dependents, run `just outdatty-update`, and
+  commit the refreshed `outdatty.lock` with the change. Add a group whenever you
+  introduce files that must stay in sync.
 - `just check-dry` (jscpd) flags duplicated Rust blocks of >=70 tokens. Fix
   a finding by extracting a shared helper — never by shuffling tokens until
   the detector loses the scent.
