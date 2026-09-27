@@ -259,7 +259,11 @@ check-dry:
     #
     # `--exit-code 1` is spelled with its value: bare `--exit-code` would
     # swallow the following path argument as its optional code.
-    jscpd --no-tips -k 70 -f rust --exit-code 1 src tests
+    #
+    # `-r ai` because the default console reporter draws a 10-line table to
+    # say `0 clones`; the ai reporter says it in 4 and still prints one
+    # `a.rs:1-14 ~ b.rs:1-14` line per clone when it fails.
+    jscpd --no-tips -k 70 -f rust --exit-code 1 -r ai src tests
 
 # Dependency audit: advisories, license policy, and dependency bans. Kept out
 # of `just check` on purpose — it fetches the advisory database, so it needs

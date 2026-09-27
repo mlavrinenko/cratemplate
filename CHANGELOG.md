@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`just check-dry` drew a 10-line table to say `0 clones`.** It now uses
+  jscpd's `ai` reporter: 4 lines on a green run, and a red run still names both
+  spans of every clone (`a.rs:1-14 ~ b.rs:1-14`).
+
 - **Four gates whose output cost more than it was worth**, each measured on a
   real project built from this template and each fixed at the source rather than
   filtered:
