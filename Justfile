@@ -80,6 +80,17 @@ validate KIND='bin':
         just check
         mmz --is-fresh --tag gate
 
+        # `just release` must refuse before tagging, with an `error:` and a
+        # `hint:` line: here on a version Cargo.toml does not carry, and on the
+        # uncommitted scratch tree. Neither refusal may leave a tag behind.
+        echo "--- Verifying just release refuses before tagging"
+        if out=$(just release 9.9.9 --dry-run 2>&1); then echo "release 9.9.9 did not refuse" >&2; exit 1; fi
+        grep -q '^error: requested v9.9.9 but Cargo.toml is 0.1.0$' <<<"$out" || { echo "$out" >&2; exit 1; }
+        grep -q '^hint: ' <<<"$out" || { echo "$out" >&2; exit 1; }
+        if out=$(just release 0.1.0 2>&1); then echo "release 0.1.0 tagged a dirty tree" >&2; exit 1; fi
+        grep -q '^error: ' <<<"$out" || { echo "$out" >&2; exit 1; }
+        test -z "$(git tag -l)" || { echo "a refused release left a tag" >&2; exit 1; }
+
         # Regression for the eject recipe: a Markdown file at >= the eject
         # baseline (90% of the 200-line Markdown limit) must not red `just
         # fix-check`. linecop's `--baseline` exit-1 is informational (a finding,

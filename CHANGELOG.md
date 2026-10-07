@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A release could fail half-way and stay that way.** outdatty v0.6.0 and
+  three library tags were published by hand before their tag was pushed, so
+  the tag's `cargo publish` failed on "already exists", the run went red and a
+  binary crate got no GitHub release. The template's release workflows now:
+  - skip `cargo publish` when crates.io already has the version (any answer
+    but 200 or 404 still stops the run), so the GitHub release still happens;
+  - run again on an existing tag through `workflow_dispatch`
+    (`gh workflow run release.yml -f tag=v1.2.3`), with every job checking out
+    the tag and one run per tag at a time;
+  - keep "Latest" on the highest tag when an older one is re-released, and
+    update an existing GitHub release in place.
+
+  `just release X.Y.Z` now refuses, with one `error:` and one `hint:` line, a
+  non-semver version, a version that differs from `Cargo.toml`, a dirty tree, a
+  branch other than main, a main that differs from origin/main, an existing
+  local or remote tag, a version already on crates.io, a CHANGELOG without a
+  dated section for the version, a HEAD whose `ci.yml` run is missing, running
+  or red, stale gates and a failing `cargo publish --dry-run`. `--dry-run` runs
+  every check and stops before tagging.
+
 - **`just check-dry` drew a 10-line table to say `0 clones`.** It now uses
   jscpd's `ai` reporter: 4 lines on a green run, and a red run still names both
   spans of every clone (`a.rs:1-14 ~ b.rs:1-14`).

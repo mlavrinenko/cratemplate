@@ -44,6 +44,13 @@
   doctests. `just cover` instruments that same runner via `cargo llvm-cov
   nextest`, so a test cannot pass under the gate and fail under coverage (or
   the reverse) with nothing saying so.
+- Release only with `just release X.Y.Z`, after `just release X.Y.Z --dry-run`
+  passes; never `cargo publish` by hand. The recipe refuses a dirty tree, a main
+  behind or ahead of origin, an existing tag, a version already on crates.io, a
+  CHANGELOG without a dated `X.Y.Z` section, a HEAD without green CI, stale
+  gates and a failing `cargo publish --dry-run`. A release whose workflow failed
+  is finished on the same tag with `gh workflow run <release workflow> -f
+  tag=vX.Y.Z`; a pushed tag never moves.
 - Eating your own dog food: the tool should use itself if applicable.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for project conventions and code standards.

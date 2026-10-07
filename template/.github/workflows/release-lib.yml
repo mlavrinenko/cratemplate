@@ -1,36 +1,73 @@
 name: Release
 
+# A pushed `v*` tag publishes that tag. A release that failed part-way is
+# finished by re-running it on the same tag, never by cutting a new version:
+#
+#   gh workflow run release-lib.yml -f tag=v1.2.3
+#
+# Every job checks out the tag, not the dispatching branch, and `cargo publish`
+# is skipped when the version is already on crates.io, so a re-run completes
+# what the first run left.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release again, e.g. v1.2.3"
+        required: true
+        type: string
 
 permissions:
   contents: read
 
+# One run per tag: a re-run queued behind a live run waits for it instead of
+# racing it to crates.io.
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
 # Actions are pinned: first-party actions to immutable release tags, third-party
 # actions to commit SHAs. Bump them with Dependabot's `github-actions` ecosystem.
 jobs:
-  guard:
-    name: Guard tag matches version
+  meta:
+    name: Resolve tag and version
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+      crate: ${{ steps.meta.outputs.crate }}
     steps:
+      # `refs/tags/` makes checkout fail on a dispatch input that names no tag.
       - uses: actions/checkout@v6.0.3
-      - name: Check tag matches Cargo.toml version
+        with:
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
+      - id: meta
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
+          name=$(sed -n 's/^name = "\(.*\)"/\1/p' Cargo.toml | head -1)
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
-          # Guard: the pushed tag must match the Cargo.toml version, otherwise
-          # `cargo publish` would ship a different version than the tag implies.
-          tag="${GITHUB_REF_NAME#v}"
-          if [ "$tag" != "$version" ]; then
-            echo "::error::tag v$tag does not match Cargo.toml version $version"
+          # The tag must match the Cargo.toml version, otherwise `cargo publish`
+          # would ship a different version than the tag implies.
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::tag $TAG does not match Cargo.toml version $version"
             exit 1
           fi
+          {
+            echo "tag=$TAG"
+            echo "version=$version"
+            echo "crate=$name"
+          } >> "$GITHUB_OUTPUT"
 
   check:
     name: Check
+    needs: meta
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6.0.3
+        with:
+          ref: refs/tags/${{ needs.meta.outputs.tag }}
       - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
       - uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
         with:
@@ -47,11 +84,13 @@ jobs:
 
   publish:
     name: Publish to crates.io
-    needs: [check, guard]
+    needs: [check, meta]
     runs-on: ubuntu-latest
     environment: crates-io
     steps:
       - uses: actions/checkout@v6.0.3
+        with:
+          ref: refs/tags/${{ needs.meta.outputs.tag }}
 
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # stable channel pinned below
         with:
@@ -59,8 +98,20 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2.9.1
 
+      # A version already on crates.io (a re-run, or a hand `cargo publish`) is
+      # skipped rather than failed. Any answer but 200 or 404 stops the run: an
+      # unreachable crates.io must not be read as "not published yet".
       # `--locked` keeps the published build reproducible; requires a committed Cargo.lock.
-      - name: Publish
-        run: cargo publish --locked
+      - name: Publish unless already on crates.io
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          CRATE: ${{ needs.meta.outputs.crate }}
+          VERSION: ${{ needs.meta.outputs.version }}
+        run: |
+          status=$(curl -sS -o /dev/null -w '%{http_code}' -A "$GITHUB_REPOSITORY release workflow" \
+            "https://crates.io/api/v1/crates/$CRATE/$VERSION")
+          case "$status" in
+            200) echo "::notice::$CRATE $VERSION is already on crates.io; skipping cargo publish" ;;
+            404) cargo publish --locked ;;
+            *) echo "::error::crates.io answered HTTP $status for $CRATE $VERSION"; exit 1 ;;
+          esac

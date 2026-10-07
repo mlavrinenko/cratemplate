@@ -66,6 +66,9 @@ crate kind (`bin` or `lib`).
 **CI/CD**
 - GitHub Actions: CI (checks, coverage, dependency audit, MSRV), Pages deployment,
   cross-platform release + crates.io publish, all with pinned actions
+- A release workflow that can be re-run on its tag (`workflow_dispatch`) and
+  skips `cargo publish` for a version already on crates.io, behind a `just
+  release X.Y.Z [--dry-run]` that refuses to tag until the release can succeed
 - `dependabot.yml` for automated action bumps
 
 ## Template maintenance
