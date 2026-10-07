@@ -41,6 +41,11 @@ validate KIND='bin':
 
     cd "$WORK_DIR/$PROJECT_NAME"
 
+    # nixpkgs builds cargo-generate 0.25 without its `git` feature, so it no
+    # longer runs `git init` (and ignores `--vcs git`); 0.23 still did. Init
+    # here so validate works on either side of that change.
+    [ -d .git ] || git init -q
+
     # Assert the shipped lock actually reaches the generated project. cargo-generate
     # ships flake.lock today (see cargo-generate.toml), but if the ignore list ever
     # regresses, validate must fail loudly: a scratch project that free-resolves
