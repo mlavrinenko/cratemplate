@@ -6,7 +6,7 @@
   difficulty: 3,
   estimate: (files: 6),
   tags: ("ci", "template"),
-  status: proposed(2026, 10, 7),
+  status: done(2026, 10, 7)[both validates green; adopted downstream],
 )
 
 = Summary
@@ -34,3 +34,13 @@ same tag, and nothing in `just release` stopped a tag that could not succeed.
   local or remote tag, a version on crates.io, no dated CHANGELOG section, a
   HEAD without green `ci.yml`, stale gates, a failing `cargo publish --dry-run`.
 - `just mmz validate bin` and `just mmz validate lib` pass.
+
+= Outcome
+
+- Commit 5cdf393. `just mmz validate bin` and `just mmz validate lib` pass,
+  and both now assert that `just release` refuses a version `Cargo.toml` does
+  not carry and an uncommitted tree, leaving no tag.
+- The hardened workflow and recipe were adopted by outdatty, typst-world,
+  typst-harvest, typst-cst, typst-edit, typst-cleanup, artifact-gate,
+  swhid-mint, and mindtape on its release-pipeline branch; outdatty v0.6.0
+  was finished with `gh workflow run release.yml -f tag=v0.6.0`.
