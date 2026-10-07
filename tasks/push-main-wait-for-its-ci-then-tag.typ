@@ -4,7 +4,7 @@
   priority: framework("ice", confidence: 0.8, ease: 6.0, impact: 7.0),
   difficulty: 3,
   estimate: (files: 6),
-  status: wip(2026, 10, 7),
+  status: done(2026, 10, 7)[both validates green; adopted by the eight crates],
   tags: ("ci", "template"),
 )
 
@@ -25,3 +25,11 @@ a wait done by eye can tag a commit whose CI later goes red.
   stubbed `gh` and a local bare origin.
 - The downstream crates adopt the recipe.
 
+
+= Outcome
+
+- Commit a0c1cda. `just mmz validate bin` and `just mmz validate lib` pass,
+  and both drive the new path against a local bare origin and a `gh` stub.
+- Adopted by outdatty, typst-world, typst-harvest, typst-cst, typst-edit,
+  typst-cleanup, artifact-gate and swhid-mint; mindtape's release-pipeline
+  branch is pending.
