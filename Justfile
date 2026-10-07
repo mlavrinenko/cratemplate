@@ -30,7 +30,11 @@ validate KIND='bin':
     step() { echo "--- $1"; }
 
     step "Generating $kind project from template"
-    nix shell nixpkgs#cargo-generate nixpkgs#cargo --command \
+    # `--inputs-from` resolves `nixpkgs` through this repo's flake.lock, not the
+    # machine's flake registry, so CI and every checkout generate with the same
+    # cargo-generate. Unpinned, CI drifted to 0.25, which stopped running
+    # `git init`, while local runs stayed green on 0.23.
+    nix shell --inputs-from "$TEMPLATE_DIR" nixpkgs#cargo-generate nixpkgs#cargo --command \
         cargo generate --path "$TEMPLATE_DIR/template" \
             --destination "$WORK_DIR" \
             --name "$PROJECT_NAME" \
@@ -42,8 +46,8 @@ validate KIND='bin':
     cd "$WORK_DIR/$PROJECT_NAME"
 
     # nixpkgs builds cargo-generate 0.25 without its `git` feature, so it no
-    # longer runs `git init` (and ignores `--vcs git`); 0.23 still did. Init
-    # here so validate works on either side of that change.
+    # longer runs `git init` (and ignores `--vcs git`); 0.23 still does. Init
+    # here so a flake.lock bump past 0.25 doesn't break validate.
     [ -d .git ] || git init -q
 
     # Assert the shipped lock actually reaches the generated project. cargo-generate
