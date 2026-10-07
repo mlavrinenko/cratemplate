@@ -21,13 +21,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - keep "Latest" on the highest tag when an older one is re-released, and
     update an existing GitHub release in place.
 
-  `just release X.Y.Z` now refuses, with one `error:` and one `hint:` line, a
-  non-semver version, a version that differs from `Cargo.toml`, a dirty tree, a
-  branch other than main, a main that differs from origin/main, an existing
-  local or remote tag, a version already on crates.io, a CHANGELOG without a
-  dated section for the version, a HEAD whose `ci.yml` run is missing, running
-  or red, stale gates and a failing `cargo publish --dry-run`. `--dry-run` runs
-  every check and stops before tagging.
+  `just release X.Y.Z` is now the whole release, so the push of main can't be
+  forgotten and no tag lands on a red commit. It first refuses, with one
+  `error:` and at most two `hint:` lines, a non-semver version, a version that
+  differs from `Cargo.toml`, a dirty tree, a branch other than main, an
+  origin/main with commits main lacks, an existing local or remote tag, a
+  version already on crates.io, a CHANGELOG without a dated section for the
+  version, stale gates and a failing `cargo publish --dry-run`. Then it pushes
+  main (fast-forward only), waits for the `ci.yml` run on that exact commit,
+  and tags and pushes the tag only if the run is green. `--dry-run` runs the
+  checks and says what it would push:
+
+  ```
+  dry run: every check passed
+  would push 1 commit(s) to origin main ('3f2a9c1'..'8d04e7b'), wait for ci.yml on '8d04e7b', then tag and push 'v0.3.0'
+  ```
 
 - **`just check-dry` drew a 10-line table to say `0 clones`.** It now uses
   jscpd's `ai` reporter: 4 lines on a green run, and a red run still names both

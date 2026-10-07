@@ -68,7 +68,8 @@ crate kind (`bin` or `lib`).
   cross-platform release + crates.io publish, all with pinned actions
 - A release workflow that can be re-run on its tag (`workflow_dispatch`) and
   skips `cargo publish` for a version already on crates.io, behind a `just
-  release X.Y.Z [--dry-run]` that refuses to tag until the release can succeed
+  release X.Y.Z [--dry-run]` that pushes main, waits for its CI and tags only
+  a green commit
 - `dependabot.yml` for automated action bumps
 
 ## Template maintenance
