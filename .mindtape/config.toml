@@ -80,11 +80,12 @@ required = "!terminal"
 units = ["files"]
 required = "!terminal"
 
-[tasks.estimate.max]
-files = 15
-
-[tasks.estimate.min]
-files = 1
+[[tasks.rules]]
+name = "estimate-in-range"
+when = "!terminal && has(estimate.files)"
+assert = "estimate.files >= 1 && estimate.files <= 15"
+message = "estimate 1 to 15 files; split a bigger task"
+severity = "error"
 
 [tasks.tags]
 allowed = [
@@ -110,15 +111,17 @@ before = ["Summary"]
 after = ["Scope"]
 message = "Summary must precede Scope"
 
-[[tasks.limits]]
-filter = 'status == "wip" && kind == "umbrella"'
-max = 1
+[[tasks.rules]]
+name = "one-wip-umbrella"
+when = 'status == "wip" && kind == "umbrella"'
+assert = 'count(status == "wip" && kind == "umbrella") <= 1'
 severity = "error"
 message = "close or split the open umbrella before opening another"
 
-[[tasks.limits]]
-filter = 'status == "wip" && kind != "umbrella"'
-max = 1
+[[tasks.rules]]
+name = "one-wip-task"
+when = 'status == "wip" && kind != "umbrella"'
+assert = 'count(status == "wip" && kind != "umbrella") <= 1'
 severity = "error"
 message = "finish the open task, or split off what is done and close that, before starting another"
 
