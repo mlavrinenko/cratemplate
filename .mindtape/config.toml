@@ -75,10 +75,12 @@ color = "red"
 
 [tasks.difficulty]
 required = "!terminal"
+example = 2
 
 [tasks.estimate]
 units = ["files"]
 required = "!terminal"
+example = { files = 1 }
 
 [[tasks.rules]]
 name = "estimate-in-range"
