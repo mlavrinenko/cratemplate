@@ -21,3 +21,4 @@ mindtape designs it first (~/projects/home/mindtape, task `configure-worktrunk-i
 - `template/AGENTS.md`: delegate with `just fork`, land with `just land`.
 - `just validate bin` and `just validate lib` pass.
 
+- If they have landed, use `mt check --commits {{ target }}..HEAD` (mindtape task `refuse-a-commit-range-that-leaves-a-task-it-names-in-progress-at-its-tip`) and `mmz --import` (mmz task `import-gate-records-from-another-checkout-of-the-same-repo`) instead of the two scripts.
