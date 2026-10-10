@@ -60,9 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     3532 lines to report success, 10 with `--min 30` matched to the threshold.
     A red run still names every offender.
   - `just cover` printed one `PASS` line per test — **2316 lines, 2137 of them
-    `PASS`** — because `cargo llvm-cov nextest` accepts `--status-level fail`
-    and ignores it. The level moved to `.config/nextest.toml`, where both
-    runners read it; 179 lines, same verdict, failures still printed in full.
+    `PASS`**. The level moved to `.config/nextest.toml`, where both runners
+    read it; 179 lines, same verdict, failures still printed in full.
     The file is a `gates-meta` mmz input, since it decides what the suite
     prints and, the day it grows retries or a default filter, what it runs.
   - `just cover` also merged profraw from binaries that no longer exist: the
