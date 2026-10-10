@@ -114,6 +114,15 @@ validate KIND='bin':
         done
         just fix-check
 
+        # linecop exits 2 on a broken run (bad config) and 1 on findings. The
+        # eject recipe masks only the findings: a broken linecop must red it
+        # rather than read as "nothing to eject".
+        echo "--- Regression: a broken linecop must red just eject"
+        bak="$(mktemp)"; cp .linecop.yaml "$bak"
+        echo "limits: [" > .linecop.yaml
+        if just eject >/dev/null 2>&1; then echo "just eject passed on a broken linecop config" >&2; exit 1; fi
+        cp "$bak" .linecop.yaml
+
         just install-hooks
         test -x "$(git rev-parse --git-path hooks/pre-commit)"
 

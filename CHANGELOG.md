@@ -159,6 +159,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gives neither). `cover`, `check-dry`, and `install-hooks` are plain recipes
   now; `release` and `mutants-diff` keep a shebang because they need one shell
   across several lines. No `-u`.
+- **Tool bump: qahq to main.** `template/flake.lock` moves qahq from 0.4.0 to
+  ae800a0: linecop v0.4.0 → v0.7.0, outdatty 0.7.0, ejectest 0.5.0, and a
+  `jscpd` that evaluates without the `stdenv.isDarwin` / `stdenv.isLinux`
+  deprecation warnings every generated dev shell printed on load. The shipped
+  `.linecop.yaml` and `outdatty.yaml` need no change. `just eject` now masks
+  only linecop's finding exit (1), so a broken linecop (exit 2 since 0.5)
+  fails the recipe instead of reading as nothing to eject.
 
 ## [0.2.0] - 2026-07-31
 
