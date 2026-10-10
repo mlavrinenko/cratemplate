@@ -4,7 +4,7 @@
   priority: framework("ice", confidence: 0.9, ease: 8.0, impact: 5.0),
   difficulty: 1,
   estimate: (files: 7),
-  status: proposed(2026, 10, 10),
+  status: done(2026, 10, 10)[validate bin and lib green],
 )
 
 = Summary

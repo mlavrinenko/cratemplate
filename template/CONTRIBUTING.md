@@ -45,15 +45,13 @@ where relevant.
 {% if crate_kind == "lib" -%}
 - Integration tests that exercise the public API across modules live in `tests/`.
 {% endif -%}
-- Run the full suite with `just test`: `cargo nextest run --status-level fail`
-  (one process per test, so a panic or hang is isolated; a green run prints only
-  the summary, a failure prints the full output) plus `cargo test --doc` for
-  doctests, which [cargo-nextest](https://nexte.st) does not run. `just cover`
-  instruments the same nextest runner, so the gate and coverage can't disagree
-  about whether a test passes. The output level lives in
-  [.config/nextest.toml](.config/nextest.toml), not in the recipe: `cargo
-  llvm-cov nextest` accepts `--status-level fail` and ignores it, so a coverage
-  run printed one `PASS` line per test until the profile moved there.
+- Run the full suite with `just test`: `cargo nextest run` (one process per
+  test, so a panic or hang is isolated; a green run prints only the summary, a
+  failure prints the full output) plus `cargo test --doc` for doctests, which
+  [cargo-nextest](https://nexte.st) does not run. `just cover` instruments the
+  same nextest runner, so the gate and coverage can't disagree about whether a
+  test passes. Both read the output level from
+  [.config/nextest.toml](.config/nextest.toml), so neither recipe repeats it.
 - As a file approaches the linecop limit, `just fix-check` ejects its inline
   `#[cfg(test)]` module into a sibling `_tests.rs` file via
   [ejectest](https://github.com/mlavrinenko/ejectest), driven by `linecop --baseline`.

@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Comments claimed `cargo llvm-cov nextest` ignores `--status-level`; it
+  doesn't.** Measured on cargo-llvm-cov 0.9.0 and cargo-nextest 0.9.143: in a
+  one-crate repro the flag takes 2 `PASS` lines to 0, and in a generated project
+  `--status-level pass` printed 178 `PASS` lines against a `fail` in
+  `.config/nextest.toml`. The level now lives only in that file, where `just
+  test` and `just cover` both read it, and `just test` drops its own flag. The
+  Justfile, `.mmz/config.yaml`, `outdatty.yaml`, `AGENTS.md` and
+  `CONTRIBUTING.md` say only why the level lives in one place.
+
 - **A release could fail half-way and stay that way.** outdatty v0.6.0 and
   three library tags were published by hand before their tag was pushed, so
   the tag's `cargo publish` failed on "already exists", the run went red and a
