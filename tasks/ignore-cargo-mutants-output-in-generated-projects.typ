@@ -10,7 +10,7 @@
 = Summary
 `just mutants` writes `mutants.out/` (and `mutants.out.old/`) at the project
 root, and the template ignores neither, so the next `git add -A` commits
-hundreds of files: nix-why-build tracked 434 of them (fdd4424).
+hundreds of files: nix-why-build tracked 434 of them (bd7b918).
 
 
 = Scope

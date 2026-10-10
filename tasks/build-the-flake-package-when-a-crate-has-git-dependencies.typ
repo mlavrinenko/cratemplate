@@ -11,7 +11,7 @@
 `template/flake.nix` builds with naersk, which cannot build git dependencies,
 so `nix build` fails once a crate takes one; the README also promises a
 crates.io install that a git dependency makes impossible. nix-why-build
-switched to `buildRustPackage` (354377b).
+switched to `buildRustPackage` (a344cd5).
 
 
 = Scope
