@@ -2,3 +2,5 @@
 /target
 /var
 /.cargo/config.toml
+/mutants.out
+/mutants.out.old
