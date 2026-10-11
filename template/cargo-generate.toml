@@ -58,10 +58,10 @@ ignore = ["LICENSE-MIT", "LICENSE-APACHE"]
 
 # Conditional crate-kind file inclusion: a lib has no binary entry point or CLI
 # integration tests, and ships the lib-only release workflow (guard + check +
-# publish, no build matrix). A bin keeps main.rs/tests/cli.rs and the existing
-# cross-platform build + release workflow.
+# publish, no build matrix). A bin keeps main.rs, tests/it/main.rs, tests/it/cli.rs
+# and the existing cross-platform build + release workflow.
 [conditional.'crate_kind == "lib"']
-ignore = ["src/main.rs", "tests/cli.rs", ".github/workflows/release.yml"]
+ignore = ["src/main.rs", "tests/it/cli.rs", "tests/it/main.rs", ".github/workflows/release.yml"]
 
 [conditional.'crate_kind == "bin"']
 ignore = [".github/workflows/release-lib.yml"]

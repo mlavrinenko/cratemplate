@@ -9,10 +9,10 @@
   lines (a variable read back later, a `trap`).
 - At the end ensure that `just fix-check` is green.
 {% if crate_kind == "bin" -%}
-- Tests: inline `#[cfg(test)]` units; CLI/integration in `tests/` (`assert_cmd` + `predicates`). `just fix-check` auto-ejects inline tests from oversized files via `ejectest`.
+- Tests: inline `#[cfg(test)]` units; CLI/integration in `tests/it/` (`assert_cmd` + `predicates`), one test binary: a new file is `tests/it/<name>.rs` plus `mod <name>;` in `tests/it/main.rs`, never a new top-level `tests/<name>.rs`. `just fix-check` auto-ejects inline tests from oversized files via `ejectest`.
 {% endif -%}
 {% if crate_kind == "lib" -%}
-- Tests: inline `#[cfg(test)]` units next to the code they exercise; add `tests/` integration tests for public-API behaviour that spans modules. `just fix-check` auto-ejects inline tests from oversized files via `ejectest`.
+- Tests: inline `#[cfg(test)]` units next to the code they exercise; add integration tests for public-API behaviour that spans modules in `tests/it/<name>.rs` with `mod <name>;` in `tests/it/main.rs` (create it for the first one): one test binary, never a top-level `tests/<name>.rs`. `just fix-check` auto-ejects inline tests from oversized files via `ejectest`.
 {% endif -%}
 - Coverage and CRAP gates run separately (CI + `just validate`): `just cover`
   then `just crap`. `just cover` uses `cargo-llvm-cov` (not tarpaulin) — it

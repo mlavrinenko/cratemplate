@@ -4,7 +4,7 @@
   priority: framework("ice", confidence: 0.8, ease: 7.0, impact: 5.0),
   difficulty: 2,
   estimate: (files: 8),
-  status: proposed(2026, 10, 11),
+  status: done(2026, 10, 11),
 )
 
 = Summary

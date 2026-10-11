@@ -139,6 +139,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Integration tests start as one binary.** A generated bin ships
+  `tests/it/main.rs` (`mod cli;`) and `tests/it/cli.rs` instead of a lone
+  `tests/cli.rs`. Cargo builds one executable per file directly in `tests/`,
+  each linking every dependency again; a module under `tests/it/` joins the one
+  `it` binary, and nextest still runs every test in its own process. A lib
+  keeps no `tests/` at all, so it starts with no empty binary; `AGENTS.md` and
+
 - **`just test` gates on cargo-nextest; doctests run in their own pass.** The
   gate is now `cargo nextest run --workspace --status-level fail` (one process
   per test, so a panic or a hang is isolated) followed by `cargo test

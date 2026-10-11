@@ -38,13 +38,21 @@ where relevant.
 
 - Unit tests live inline in a `#[cfg(test)] mod tests` block next to the code they exercise.
 {% if crate_kind == "bin" -%}
-- CLI and integration tests live in `tests/` and drive the built binary with
+- CLI and integration tests live in `tests/it/` and drive the built binary with
   [`assert_cmd`](https://docs.rs/assert_cmd) + [`predicates`](https://docs.rs/predicates)
-  (see `tests/cli.rs`).
+  (see `tests/it/cli.rs`).
 {% endif -%}
 {% if crate_kind == "lib" -%}
-- Integration tests that exercise the public API across modules live in `tests/`.
+- Integration tests that exercise the public API across modules live in `tests/it/`.
 {% endif -%}
+- `tests/it/` is the one integration binary: cargo builds an executable per
+  file directly in `tests/`, and each one links every dependency again, so ten
+  files are ten executables. A new test file goes in as `tests/it/<name>.rs`
+  plus `mod <name>;` in `tests/it/main.rs`{% if crate_kind == "lib" %} (create `main.rs` with the
+  first one){% endif %}. Shared helpers go in `tests/it/common/mod.rs`, declared
+  once in `main.rs` as `mod common;` and reached with `use crate::common::...`.
+  `include_str!` and `#[path]` resolve relative to the source file;
+  `env!("CARGO_MANIFEST_DIR")` paths do not move.
 - Run the full suite with `just test`: `cargo nextest run` (one process per
   test, so a panic or hang is isolated; a green run prints only the summary, a
   failure prints the full output) plus `cargo test --doc` for doctests, which
