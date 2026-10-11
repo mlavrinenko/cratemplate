@@ -50,6 +50,10 @@ validate KIND='bin':
     # here so a flake.lock bump past 0.25 doesn't break validate.
     [ -d .git ] || git init -q
 
+    # Git tracks files, so a clone holds no empty directory, while cargo-generate
+    # leaves a lib an empty `tests/`. Gate the tree a clone gets.
+    find . -type d -empty -not -path "./.git/*" -delete
+
     # Assert the shipped lock actually reaches the generated project. cargo-generate
     # ships flake.lock today (see cargo-generate.toml), but if the ignore list ever
     # regresses, validate must fail loudly: a scratch project that free-resolves

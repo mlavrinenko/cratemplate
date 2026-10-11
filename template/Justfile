@@ -172,6 +172,8 @@ crap:
 # The set is what `cover` measures plus what exercises it: `src` is rendered,
 # `tests` is the instrument, so a changed test moves the coverage of files it
 # never edited. Extend it when a workspace member's sources land outside `src/`.
+# A lib starts with no `tests/` and a clone drops empty directories, so `tests`
+# joins the set only where it exists.
 #
 # Why a refusal and not a `cover` dependency: that recipe is minutes of
 # instrumented CPU and this gate is seconds, so someone iterating on one
@@ -185,7 +187,9 @@ _lcov-stale-reason:
         echo "$lcov is missing"
         exit 0
     fi
-    newer=$(find src tests -name '*.rs' -newer "$lcov" -print -quit)
+    dirs=(src)
+    [ ! -d tests ] || dirs+=(tests)
+    newer=$(find "${dirs[@]}" -name '*.rs' -newer "$lcov" -print -quit)
     if [ -n "$newer" ]; then
         echo "$lcov predates $newer"
     fi

@@ -45,6 +45,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   would push main, wait for ci.yml on it, then tag and push 'v0.3.0'
   ```
 
+- **`just crap` failed in a lib cloned from git.** A lib ships no `tests/`;
+  cargo-generate leaves an empty one, which a clone drops, and the staleness
+  test behind `just crap` ran `find src tests`, which exits 1 on a directory
+  that is not there. It now searches `tests` only where it exists, and `just
+  validate` deletes empty directories first, so the lib is gated as a clone
+  holds it.
+
 - **`just check-dry` drew a 10-line table to say `0 clones`.** It now uses
   jscpd's `ai` reporter: 4 lines on a green run, and a red run still names both
   spans of every clone (`a.rs:1-14 ~ b.rs:1-14`).
