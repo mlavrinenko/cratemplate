@@ -32,18 +32,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   `just release X.Y.Z` is now the whole release, so the push of main can't be
   forgotten and no tag lands on a red commit. It first refuses, with one
-  `error:` and at most two `hint:` lines, a non-semver version, a version that
-  differs from `Cargo.toml`, a dirty tree, a branch other than main, an
-  origin/main with commits main lacks, an existing local or remote tag, a
-  version already on crates.io, a CHANGELOG without a dated section for the
-  version, stale gates and a failing `cargo publish --dry-run`. Then it pushes
-  main (fast-forward only), waits for the `ci.yml` run on that exact commit,
-  and tags and pushes the tag only if the run is green. `--dry-run` runs the
-  checks and says what it would push:
+  `error:` and at most two `hint:` lines, a non-semver version, a dirty tree, a
+  branch other than main, an origin/main with commits main lacks, an existing
+  local or remote tag, a version already on crates.io, a CHANGELOG with nothing
+  under `[Unreleased]`, failing gates and a failing `cargo publish --dry-run`.
+  Then it pushes main (fast-forward only), waits for the `ci.yml` run on that
+  exact commit, and tags and pushes the tag only if the run is green.
+  `--dry-run` runs the checks and says what it would push:
 
   ```
   dry run: every check passed
-  would push 1 commit(s) to origin main ('3f2a9c1'..'8d04e7b'), wait for ci.yml on '8d04e7b', then tag and push 'v0.3.0'
+  would push main, wait for ci.yml on it, then tag and push 'v0.3.0'
   ```
 
 - **`just check-dry` drew a 10-line table to say `0 clones`.** It now uses
@@ -139,6 +138,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`just release` runs cargo-release instead of a 95-line recipe.** A generated
+  crate gets `release.toml` and `.just/scripts/release-hook.sh`, and `cargo-release`
+  in its dev shell. cargo-release bumps `Cargo.toml`, dates the entries under
+  `[Unreleased]` as `## [X.Y.Z] - <date>` and commits, so nobody dates the
+  CHANGELOG by hand any more; the hook keeps every refusal and hint of the old
+  recipe, bar "requested a version that `Cargo.toml` does not carry", which the
+  bump makes moot. The recipe still pushes main, waits for `ci.yml`
+  (`.just/scripts/release-ci.sh`) and tags only on a green run. A re-run after
+  a red run finds the bump and the dating done and changes nothing twice. The
+  hook runs `just check` after the bump, since the bump itself makes the memoized
+  gates stale, and refreshes outdatty's `release-notes` group.
 - **Integration tests start as one binary.** A generated bin ships
   `tests/it/main.rs` (`mod cli;`) and `tests/it/cli.rs` instead of a lone
   `tests/cli.rs`. Cargo builds one executable per file directly in `tests/`,

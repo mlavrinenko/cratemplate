@@ -89,13 +89,12 @@ validate KIND='bin':
         just check
         mmz --is-fresh --tag gate
 
-        # `just release` must refuse before tagging, with an `error:` and a
-        # `hint:` line: here on a version Cargo.toml does not carry, and on the
-        # uncommitted scratch tree. Neither refusal may leave a tag behind.
+        # `just release` must refuse before tagging: a version that is not
+        # semver (just's own argument pattern), and the uncommitted scratch
+        # tree (cargo-release's dirty check, or the hook's). Neither refusal may
+        # leave a tag behind.
         echo "--- Verifying just release refuses before tagging"
-        if out=$(just release 9.9.9 --dry-run 2>&1); then echo "release 9.9.9 did not refuse" >&2; exit 1; fi
-        grep -q "^error: requested 'v9.9.9' but Cargo.toml is '0.1.0'\$" <<<"$out" || { echo "$out" >&2; exit 1; }
-        grep -q '^hint: ' <<<"$out" || { echo "$out" >&2; exit 1; }
+        if out=$(just release v1 --dry-run 2>&1); then echo "release v1 did not refuse" >&2; exit 1; fi
         if out=$(just release 0.1.0 2>&1); then echo "release 0.1.0 tagged a dirty tree" >&2; exit 1; fi
         grep -q '^error: ' <<<"$out" || { echo "$out" >&2; exit 1; }
         test -z "$(git tag -l)" || { echo "a refused release left a tag" >&2; exit 1; }
@@ -139,9 +138,11 @@ validate KIND='bin':
         nix build .#default
 
         # The full release path, against a local bare origin and a `gh` stub
-        # whose ci.yml run ends as $GH_STUB_CI. Release must refuse an origin
-        # main that main lacks, push nothing on --dry-run, push main but leave
-        # no tag when CI is red, and push the tag only when CI is green.
+        # whose ci.yml run ends as $GH_STUB_CI. Release must refuse a dirty
+        # tree and an origin main that main lacks, push nothing on --dry-run,
+        # push main but leave no tag when CI is red, and push the tag only when
+        # CI is green. cargo-release bumps, dates the entries under
+        # [Unreleased] and commits; a re-run after the red CI must not date twice.
         echo "--- Verifying just release pushes main, waits for CI, tags only green"
         stub="$(mktemp -d)"
         origin="$stub/origin.git"
@@ -163,28 +164,40 @@ validate KIND='bin':
         git init -q --bare "$origin"
         git remote add origin "$origin"
         git push -q origin main
-        sed -i "s/^## \[Unreleased\]/&\n\n## [0.1.0] - $(date +%F)/" CHANGELOG.md
-        just check
-        git commit -qam "release 0.1.0" --no-verify
         remote_main() { git ls-remote origin refs/heads/main | cut -f1; }
+
+        # The release's entries sit under [Unreleased], as an author leaves them.
+        sed -i "s/^## \[Unreleased\]/&\n\n### Added\n\n- the first release/" CHANGELOG.md
+        printf '%s\n' dirty > dirty.txt
+        if out=$(just release 0.1.0 --dry-run 2>&1); then echo "release took a dirty tree" >&2; exit 1; fi
+        grep -q '^error: ' <<<"$out" || { echo "$out" >&2; exit 1; }
+        rm dirty.txt
+        git commit -qam "add the first release's entry" --no-verify
 
         git push -q origin "$(git commit-tree 'HEAD~1^{tree}' -p HEAD~1 -m other):refs/heads/main"
         if out=$(just release 0.1.0 --dry-run 2>&1); then echo "release took an origin main that main lacks" >&2; exit 1; fi
         grep -q "^error: origin/main has commits that main lacks\$" <<<"$out" || { echo "$out" >&2; exit 1; }
         git push -qf origin HEAD~1:refs/heads/main
 
+        head_before=$(git rev-parse HEAD)
         out=$(GH_STUB_CI=success just release 0.1.0 --dry-run 2>&1) || { echo "$out" >&2; exit 1; }
-        grep -q "^would push 1 commit(s) to origin main .*, wait for ci.yml on '$(git rev-parse --short HEAD)', then tag and push 'v0.1.0'\$" <<<"$out" || { echo "$out" >&2; exit 1; }
+        grep -q "^dry run: every check passed\$" <<<"$out" || { echo "$out" >&2; exit 1; }
+        grep -q "^would push main, wait for ci.yml on it, then tag and push 'v0.1.0'\$" <<<"$out" || { echo "$out" >&2; exit 1; }
         test "$(remote_main)" = "$(git rev-parse HEAD~1)" || { echo "--dry-run pushed main" >&2; exit 1; }
+        test "$(git rev-parse HEAD)" = "$head_before" -a -z "$(git status --porcelain)" \
+            || { echo "--dry-run changed the tree" >&2; exit 1; }
 
         if out=$(GH_STUB_CI=failure just release 0.1.0 2>&1); then echo "release tagged a red CI run" >&2; exit 1; fi
         grep -q "^error: ci.yml ended 'failure' on '$(git rev-parse --short HEAD)', so 'v0.1.0' was not made\$" <<<"$out" || { echo "$out" >&2; exit 1; }
         test "$(grep -c '^hint: ' <<<"$out")" = 2 || { echo "$out" >&2; exit 1; }
         test "$(remote_main)" = "$(git rev-parse HEAD)" || { echo "release did not push main" >&2; exit 1; }
         test -z "$(git tag -l)$(git ls-remote --tags origin)" || { echo "a red CI run left a tag" >&2; exit 1; }
+        test "$(git log -1 --format=%s)" = "chore(release): 0.1.0" || { echo "release did not commit the bump" >&2; exit 1; }
 
+        # The re-run after the red run finds the bump done: it dates nothing twice.
         GH_STUB_CI=success just release 0.1.0
         git ls-remote --exit-code --tags origin refs/tags/v0.1.0 >/dev/null || { echo "release did not push v0.1.0" >&2; exit 1; }
+        test "$(grep -c '^## \[0\.1\.0\] - ' CHANGELOG.md)" = 1 || { echo "the re-run dated the CHANGELOG twice" >&2; exit 1; }
     INNER
 
     # `nix develop` silently re-resolves (and rewrites flake.lock in place) if

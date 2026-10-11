@@ -52,6 +52,8 @@ groups:
     source:
       - flake.nix
       - Justfile
+      - release.toml
+      - ".just/scripts/**"
       - .config/nextest.toml
       - .mmz/config.yaml
     dependents:

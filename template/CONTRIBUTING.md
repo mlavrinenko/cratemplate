@@ -67,13 +67,12 @@ where relevant.
 
 ## Code Coverage
 
-Minimum 70% line coverage enforced via `cargo-llvm-cov`. Run `just cover` to check.
-llvm-cov merges the profraw of child processes, so subprocess-based e2e tests
-attribute correctly — unlike tarpaulin, which misses them. It starts with
-`cargo llvm-cov clean --workspace`, and that line is not tidiness: `--no-report`
-deliberately keeps the profraw pile so runs can be merged, so without the clean
-a long-lived checkout scores binaries that no longer exist. Never trade it for
-speed — it fails toward pessimism, which no floor complains about.
+Minimum 70% line coverage, enforced by `just cover` via `cargo-llvm-cov`. It
+merges the profraw of child processes, so subprocess-based e2e tests attribute
+correctly, unlike tarpaulin. It starts with `cargo llvm-cov clean --workspace`
+on purpose: `--no-report` keeps the profraw pile so runs can be merged, and
+without the clean a long-lived checkout scores binaries that no longer exist.
+Never trade it for speed.
 {%- if crate_kind == "bin" %}
 `main.rs` is excluded from coverage — keep it thin and move testable logic to `lib.rs`.
 {%- endif %}
@@ -99,10 +98,8 @@ fails, and a red run still names every offender.
 
 ## File Size Limits
 
-- Rust files: 500 lines max
-- Markdown files: 200 lines max
-
-When a file exceeds the limit, split it into modules or separate documents.
+Rust files: 500 lines max. Markdown files: 200 lines max. Split a file that
+exceeds its limit into modules or separate documents.
 
 ## Dependency Drift
 
@@ -111,9 +108,9 @@ When a file exceeds the limit, split it into modules or separate documents.
 that describe it. `just check` runs `outdatty check`, which fails when a source
 changed but its dependents were not re-confirmed.
 
-After editing a source, review the listed dependents, update them as needed, then
-run `just outdatty-update` to record the new state into `outdatty.lock` and commit
-it. Add or adjust groups whenever you introduce files that must move together.
+After editing a source, review the listed dependents, update them as needed, run
+`just outdatty-update` and commit `outdatty.lock`. Add a group whenever you
+introduce files that must move together.
 
 ## Memoized Gates
 
@@ -141,11 +138,9 @@ worth knowing:
   delete its record under `.mmz/cache/` (gitignored via `.mmz/.gitignore`).
 - `just status` (`mmz --status`) prints every rule's freshness as a table — what
   a `just check` would re-run, and whether the pre-commit hook would pass now.
-- In a brand-new clone there is no `Cargo.lock` yet; cargo writes it during the
-  first `just check`, so the arms that declare it record a pre-lock digest and
-  miss once more on the second run. "A no-op re-run is a full hit" holds from
-  the third run onward. Nothing to fix — just do not read that first miss as a
-  broken cache.
+- A brand-new clone has no `Cargo.lock`; cargo writes it during the first
+  `just check`, so the arms that declare it miss once more on the second run.
+  A no-op re-run is a full hit from the third on. That miss is not a broken cache.
 
 ## Copy-Paste Gate
 
@@ -160,9 +155,8 @@ detector loses the scent.
 dependency bans. It is deliberately not part of `just check`: it fetches the
 advisory database, so it needs network and would make an offline commit fail.
 CI runs it in its own job. The recipe passes `--hide-inclusion-graph`: the
-default prints a full inclusion tree per crate it mentions, so a green run can
-be 1411 lines to say `advisories ok, bans ok, licenses ok`. Drop the flag when
-you are chasing one finding and want the tree.
+default prints an inclusion tree per crate it mentions, 1411 lines to say
+`advisories ok, bans ok, licenses ok`. Drop the flag to chase one finding.
 
 The policy lives in [deny.toml](deny.toml). A dependency under a license not in
 `licenses.allow` fails the check — add one deliberately, not to silence a
@@ -171,9 +165,19 @@ finding. Keep the file in cargo-deny's current schema: a retired key (the old
 fails the whole check rather than being ignored.
 
 `just outdated` (cargo-outdated) lists dependencies with newer versions
-published. Also network-bound, and deliberately not a gate — an upstream release
-is not a reason for CI to go red. Unrelated to `just outdatty-check` above,
-which is about doc drift rather than dependency versions.
+published. Also network-bound, and never a gate: an upstream release is not a
+reason for CI to go red. It is unrelated to `just outdatty-check` (doc drift).
+
+## Releasing
+
+`just release X.Y.Z --dry-run` first, then without the flag. Keep the entries
+under `[Unreleased]`. [cargo-release](https://github.com/crate-ci/cargo-release)
+(`release.toml`) bumps `Cargo.toml`, dates them, runs
+`.just/scripts/release-hook.sh`, which holds every refusal, and commits. The
+recipe pushes `main`, waits for `ci.yml` on it (`.just/scripts/release-ci.sh`)
+and tags only if it is green. After a red run, fix `main` and re-run: the bump
+stays done. The tag push is the only publish path, so never `cargo publish` by
+hand.
 
 ## MSRV
 
@@ -182,8 +186,7 @@ version. CI verifies it compiles on that version in a separate job.
 
 ## Mutation Testing
 
-`cargo-mutants` helps find assertion gaps by injecting bugs and checking that
-tests catch them. Two recipes:
+`cargo-mutants` injects bugs and checks that the tests catch them. Two recipes:
 
 - `just mutants-diff` — sweeps only mutants touched by this branch's diff
   against `main` (the daily driver).
