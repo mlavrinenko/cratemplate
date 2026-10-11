@@ -293,6 +293,23 @@ deny:
 outdated:
     cargo outdated --workspace
 
+# `wt` places the worktree at `../<repo>.<slug>` unless the user configures
+# otherwise. Extra flags go to `wt switch`, e.g. `--base=@` to branch from HEAD
+# instead of main. The `pre-start` hook in .config/wt.toml allows its `.envrc`.
+# Fork a sibling worktree on a new branch (usage: just fork my-slug)
+[positional-arguments]
+fork SLUG *ARGS:
+    wt switch --create --yes "$@"
+
+# Run in the worktree. `--no-squash --no-commit` keeps every branch commit as it
+# is and refuses a dirty tree instead of committing it; the `pre-merge`
+# hooks in .config/wt.toml run the gate and the task check before the
+# fast-forward, and `pre-remove` carries the gate records and coverage over.
+# Gate, fast-forward the branch onto main and remove its worktree
+[positional-arguments]
+land *ARGS:
+    wt merge --no-squash --no-commit --yes "$@"
+
 # Point git at the tracked pre-commit hook (`.githooks/pre-commit` asserts
 # `mmz --is-fresh --tag gate` against the worktree, running nothing of its
 # own). The dev shell runs this recipe from shellHook on entry, so a fresh

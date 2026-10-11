@@ -54,6 +54,7 @@ groups:
       - Justfile
       - release.toml
       - ".just/scripts/**"
+      - .config/wt.toml
       - .config/nextest.toml
       - .mmz/config.yaml
     dependents:

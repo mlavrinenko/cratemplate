@@ -21,6 +21,7 @@ validate KIND='bin':
     esac
 
     TEMPLATE_DIR="$(pwd)"
+    export TEMPLATE_DIR
     WORK_DIR="$(mktemp -d)"
     PROJECT_NAME="validate-test-crate"
 
@@ -136,6 +137,16 @@ validate KIND='bin':
         # cargo-deny rejects a retired config key outright, so a deny.toml
         # that has drifted out of schema fails CI in every generated project.
         just deny
+
+        # Worktrunk ships in the repo: the hooks keep their template variables
+        # (the file is not rendered), wt parses them, and the pre-remove lcov
+        # carry does what its cases say. `fork` and `land` are one-line wraps.
+        echo "--- Verifying the worktrunk hooks"
+        grep -q '[{][{] target }}' .config/wt.toml || { echo ".config/wt.toml lost its target variable (rendered by cargo-generate?)" >&2; exit 1; }
+        wtconf="$(mktemp)"
+        WORKTRUNK_CONFIG_PATH="$wtconf" wt hook show 2>&1 | grep -q 'pre-remove lcov' \
+            || { echo "wt does not read .config/wt.toml" >&2; exit 1; }
+        bash "$TEMPLATE_DIR/scripts/test-wt-carry-lcov.sh" .
 
         echo "--- Verifying nix build (package) in a clean sandbox"
         git add -A

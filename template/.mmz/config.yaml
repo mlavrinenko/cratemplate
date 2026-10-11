@@ -77,11 +77,13 @@ scopes:
   lcov:
     - "target/coverage/lcov.info"
 
-  # The release config and its scripts are outdatty `dev-docs` SOURCES (they
-  # decide what AGENTS.md and CONTRIBUTING.md say a release refuses), so only
-  # the outdatty gate re-runs when they change. `just release` is not a gate.
-  release-meta:
+  # The release config, the worktrunk hooks and their scripts are outdatty
+  # `dev-docs` SOURCES (they decide what AGENTS.md and CONTRIBUTING.md say a
+  # release refuses and a land runs), so only the outdatty gate re-runs when
+  # they change. `just release` and `just land` are not gates.
+  tooling-meta:
     - "release.toml"
+    - ".config/wt.toml"
     - ".just/scripts/**"
 
   # Shared by every rule: the recipe bodies (Justfile), the dev shell they all
@@ -147,7 +149,7 @@ commands:
   # lock; `outdatty-config` covers the lock and the group definitions directly.
   - name: just outdatty-check
     tags: [gate]
-    inputs: [outdatty-config, rust, docs, release-meta, gates-meta]
+    inputs: [outdatty-config, rust, docs, tooling-meta, gates-meta]
 
   # Untagged from here down: these run outside `just check` (CI runs them in
   # their own job), so they stay out of the gate set. Memoized only so a no-op

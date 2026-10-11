@@ -135,6 +135,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Worktrunk delegation ships in the template.** Hooks in a user's own config
+  don't travel with a clone, and without them `wt merge` squashes the branch,
+  commits a dirty tree and runs no gate. A generated crate now carries
+  `.config/wt.toml` and puts `worktrunk` in its dev shell. `just fork <slug>`
+  makes a sibling worktree on a new branch (`pre-start` allows its `.envrc`);
+  `just land` runs `wt merge --no-squash --no-commit --yes`, so every branch
+  commit survives and a dirty tree is refused. Before the merge, `pre-merge`
+  runs `just check`, then `mt check --commits <main>..HEAD` where the crate has
+  a `.mindtape/` and `mt` is installed (the dev shell does not ship `mt`;
+  otherwise `.just/scripts/wt-tasks.sh` skips it and says so). After it,
+  `pre-remove` imports the gate records into the primary checkout with
+  `mmz --import` (a no-op until the pinned mmz has that flag) and carries the
+  coverage lcov over with `.just/scripts/wt-carry-lcov.sh`, so `just crap`
+  there needs no second instrumented build. `just validate` runs the lcov
+  carry through seven cases.
 - **`just outdated`.** The dev shell now ships `cargo-outdated`
   (dependencies with newer versions published) as a dev aid wired into no
   gate: an upstream release is not a reason for CI to go red.

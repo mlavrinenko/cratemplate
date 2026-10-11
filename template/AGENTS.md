@@ -59,6 +59,16 @@
   nothing the first run did. A release whose workflow failed
   is finished on the same tag with `gh workflow run <release workflow> -f
   tag=vX.Y.Z`; a pushed tag never moves.
+- Delegated work forks with `just fork <slug>` (a sibling worktree on a new
+  branch, dev shell allowed) and lands with `just land` run in that worktree:
+  it gates, fast-forwards main and removes the worktree. Both wrap
+  [worktrunk](https://worktrunk.dev); [.config/wt.toml](.config/wt.toml) holds
+  the hooks, and `.just/scripts/` the scripts they run. Never run a bare
+  `wt merge`: it squashes away the branch's commits and commits a dirty tree.
+  `pre-merge` also runs `mt check --commits` where the crate tracks tasks with
+  MindTape and `mt` is installed (the dev shell does not ship it), else skips it.
+  `pre-remove` imports the gate records into the primary checkout when its mmz
+  has `mmz --import`, else skips that too.
 - Eating your own dog food: the tool should use itself if applicable.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for project conventions and code standards.
