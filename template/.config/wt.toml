@@ -10,8 +10,8 @@ allow = "direnv allow"
 
 # The lock first: the rebase left the target's outdatty.lock (see
 # .gitattributes), so `refresh` records the merged tree before the gate reads
-# it, and `amend` folds the result into the lane's last commit once the gate
-# has passed on it. Both are no-ops when the lock merged on its own.
+# it, and `amend` folds the result into the lane's last work commit once the
+# gate has passed on it. Both are no-ops when the lock merged on its own.
 [[pre-merge]]
 lock = "direnv exec . bash .just/scripts/wt-lock.sh refresh {{ target }}"
 

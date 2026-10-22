@@ -76,7 +76,8 @@
   `just install-hooks` defines and which keeps main's copy. The `pre-merge`
   hooks in `.config/wt.toml` run `.just/scripts/wt-lock.sh`: `refresh` re-records
   the merged tree with `outdatty update` when the check is red, and `amend`
-  folds the lock into the lane's last commit after the gate passes. `just
+  folds the lock into the lane's newest commit with a `Refs:` footer after the
+  gate passes, so a trailing task-filing commit stays tasks-only. `just
   land-repro` replays two such lanes in a scratch repo under /tmp.
 - Eating your own dog food: the tool should use itself if applicable.
 

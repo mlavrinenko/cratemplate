@@ -13,8 +13,10 @@
 #            pre-commit hook, which holds the check, so what is stale is the
 #            merge's doing and not a review the lane skipped.
 #   amend    runs after the gate has passed on that lock. It folds the lock
-#            into the lane's last commit: a commit of its own would need a
-#            `Refs:` footer, and pre-commit wants the lock staged.
+#            into the lane's newest commit that carries a `Refs:` footer, by
+#            fixup and autosquash when task-filing commits follow it. A commit
+#            of its own would need a `Refs:` footer, and pre-commit wants the
+#            lock staged.
 #
 # A crate without outdatty.lock or outdatty has nothing to settle.
 set -euo pipefail
@@ -37,7 +39,18 @@ amend)
     # Nothing of the lane's own to fold the lock into.
     [ "$(git rev-list --count "$target"..HEAD)" -gt 0 ] || exit 0
     git add outdatty.lock
-    git commit -q --amend --no-edit
+    # The newest commit that names a task. A task-filing commit after it has
+    # no `Refs:` footer, and the commit-msg hook refuses a lock inside it.
+    host=$(git log -1 --format=%H --grep='^Refs: ' "$target"..HEAD)
+    if [ -z "$host" ] || [ "$host" = "$(git rev-parse HEAD)" ]; then
+        git commit -q --amend --no-edit
+    else
+        git commit -q --fixup="$host"
+        GIT_SEQUENCE_EDITOR=true git rebase -q -i --autosquash "$target" || {
+            git rebase --abort
+            exit 1
+        }
+    fi
     ;;
 *)
     echo "usage: wt-lock.sh refresh|amend <target>" >&2

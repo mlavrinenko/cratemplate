@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`just land` failed when a lane ended on a commit that only files a task.**
+  `wt-lock.sh amend` put `outdatty.lock` into that last commit, which a
+  commit-msg hook asking for a `Refs:` footer outside `tasks/` refuses. It now
+  folds the lock into the newest commit with a `Refs:` footer, by fixup and
+  autosquash, so the task-filing commit stays tasks-only. `just land-repro`
+  gains a lane that ends on one, with a stand-in commit-msg hook.
+
 - **`just mutants` failed in every generated project.** cargo-mutants 27
   rejects the `exclude` key in `.cargo/mutants.toml`; the template now writes
   `exclude_globs`, and spells the bin's entry point `**/src/main.rs` so it
