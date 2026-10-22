@@ -27,6 +27,8 @@ crate kind (`bin` or `lib`).
 - Either kind of crate: a `bin` gets `main.rs`, a `clap` CLI, `assert_cmd` e2e tests
   and a cross-platform release matrix; a `lib` drops all of that and ships a
   publish-only release workflow
+- One crate at the root, or a Cargo workspace once you move the crates under
+  `crates/`: every gate finds them there with no edit
 
 **Quality gates**
 - Code coverage via `cargo-llvm-cov` (70% minimum) — it merges child-process

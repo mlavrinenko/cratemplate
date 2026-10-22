@@ -25,12 +25,15 @@
 # error, never a silent pass-through.
 
 scopes:
-  # Everything that builds and tests the crate. Deliberately `src/**`, not
-  # `src/**/*.rs`: an asset `include_str!`'d into the binary belongs in the
-  # build's freshness too, and a Rust-only glob would silently drop it.
+  # Everything that builds and tests the crate, or the workspace: a single crate
+  # keeps its sources in `src/` and `tests/`, a workspace under `crates/`.
+  # Deliberately `src/**`, not `src/**/*.rs`: an asset `include_str!`'d into the
+  # binary belongs in the build's freshness too, and a Rust-only glob would
+  # silently drop it. A glob that matches nothing is harmless.
   rust:
     - "src/**"
     - "tests/**"
+    - "crates/**"
     - "Cargo.toml"
     - "Cargo.lock"
     - "rust-toolchain.toml"
@@ -43,9 +46,11 @@ scopes:
   rust-clippy:
     - "clippy.toml"
 
-  # Cargo manifests only — cargo-machete reads these, not sources.
+  # Cargo manifests only — cargo-machete reads these, not sources. A workspace
+  # member has its own under `crates/`.
   manifests:
     - "Cargo.toml"
+    - "crates/*/Cargo.toml"
     - "Cargo.lock"
 
   # linecop config — a limit or override change busts the file-size gate.
@@ -139,7 +144,7 @@ commands:
     tags: [gate]
     inputs: [rust, file-size-config, docs, gates-meta]
 
-  # jscpd scans `src/` and `tests/` for duplicated Rust blocks (>=70 tokens).
+  # jscpd scans `src/` and `tests/` (or `crates/`) for duplicated Rust blocks (>=70 tokens).
   # The `-k 70` threshold is Justfile-defined, so a Justfile edit re-runs this.
   - name: just check-dry
     tags: [gate]

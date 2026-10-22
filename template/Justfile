@@ -15,6 +15,14 @@ set shell := ["bash", "-eo", "pipefail", "-c"]
 # one to its own throwaway shell. Shebang recipe bodies are untouched.
 set ignore-comments := true
 
+# Where the Rust sources live. A workspace keeps every member under `crates/`
+# (one directory per crate, its `src` and `tests` inside), so the gates that scan
+# sources scan that one directory; a single crate at the root has `src` and,
+# for a bin, `tests`. Decided by whether `crates/` exists, so moving a crate
+# there needs no edit here. `eject_root` is the one root ejectest takes.
+rust_roots := if path_exists("crates") == "true" { "crates" } else { "src tests" }
+eject_root := if path_exists("crates") == "true" { "crates" } else { "src" }
+
 # List available recipes
 default:
     @just --list
@@ -64,8 +72,10 @@ outdatty-update:
 # per test, so a panicking or hanging test is isolated. The output level is
 # `.config/nextest.toml`'s `fail`: a green run prints only the run header and
 # the summary line, a red one prints every failure's full output. nextest does
-# not run doctests, so a second pass covers them: a project with none pays a
-# fast `running 0 tests` no-op.
+# not run doctests, so a second pass covers them. The doctest pass prints five
+# lines per workspace member even with no doctests at all, so its output shows
+# only when it fails and otherwise keeps just the summaries of members that ran
+# a doctest.
 #
 # `[positional-arguments]` + `"$@"`: ARGS still reach both passes (a plain
 # substring filter works for both), but interpolating the variadic would
@@ -73,7 +83,7 @@ outdatty-update:
 [positional-arguments]
 test *ARGS:
     cargo nextest run --workspace "$@"
-    cargo test --workspace --doc "$@"
+    out=$(cargo test --workspace --doc -q "$@" 2>&1) || { printf '%s\n' "$out"; exit 1; }; grep -E '^test result: ok\. [1-9]' <<<"$out" || true
 
 # Run clippy only
 clippy:
@@ -171,9 +181,9 @@ crap:
 #
 # The set is what `cover` measures plus what exercises it: `src` is rendered,
 # `tests` is the instrument, so a changed test moves the coverage of files it
-# never edited. Extend it when a workspace member's sources land outside `src/`.
-# A lib starts with no `tests/` and a clone drops empty directories, so `tests`
-# joins the set only where it exists.
+# never edited. `rust_roots` names them (`crates/` in a workspace, which holds
+# every member's `src` and `tests`). A lib starts with no `tests/` and a clone
+# drops empty directories, so the set is searched only where it exists.
 #
 # Why a refusal and not a `cover` dependency: that recipe is minutes of
 # instrumented CPU and this gate is seconds, so someone iterating on one
@@ -187,8 +197,8 @@ _lcov-stale-reason:
         echo "$lcov is missing"
         exit 0
     fi
-    dirs=(src)
-    [ ! -d tests ] || dirs+=(tests)
+    dirs=()
+    for d in {{ rust_roots }}; do [ ! -d "$d" ] || dirs+=("$d"); done
     newer=$(find "${dirs[@]}" -name '*.rs' -newer "$lcov" -print -quit)
     if [ -n "$newer" ]; then
         echo "$lcov predates $newer"
@@ -242,20 +252,20 @@ eject PCT='90':
     paths="$(linecop --baseline {{ PCT }} --format paths)" || rc=$?
     [ "$rc" -le 1 ] || exit "$rc"
 
-    # Rust only: paths outside `src` and non-`.rs` files are dropped by
+    # Rust only: paths outside `{{ eject_root }}` and non-`.rs` files are dropped by
     # ejectest's own --lenient root check anyway, but a Markdown path must not
     # reach a tool that moves inline Rust test modules at all.
     rust_paths="$(printf '%s\n' "$paths" | grep '\.rs$' || true)"
 
     if [ -n "$rust_paths" ]; then
-        printf '%s\n' "$rust_paths" | ejectest apply src --files-from - --lenient
+        printf '%s\n' "$rust_paths" | ejectest apply {{ eject_root }} --files-from - --lenient
     fi
 
 # Check for oversized files (fails if any exceed limits)
 check-file-size:
     linecop
 
-# Copy-paste gate: fail on any duplicated Rust block across the crate.
+# Copy-paste gate: fail on any duplicated Rust block across the crate or workspace.
 check-dry:
     # jscpd (the Rust port, packaged via qahq in flake.nix) fails on any
     # duplicated block of >=70 tokens, naming both spans. Fix a finding by
@@ -268,7 +278,7 @@ check-dry:
     # `-r ai` because the default console reporter draws a 10-line table to
     # say `0 clones`; the ai reporter says it in 4 and still prints one
     # `a.rs:1-14 ~ b.rs:1-14` line per clone when it fails.
-    jscpd --no-tips -k 70 -f rust --exit-code 1 -r ai src tests
+    jscpd --no-tips -k 70 -f rust --exit-code 1 -r ai {{ rust_roots }}
 
 # Dependency audit: advisories, license policy, and dependency bans. Kept out
 # of `just check` on purpose — it fetches the advisory database, so it needs

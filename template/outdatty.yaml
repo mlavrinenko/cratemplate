@@ -10,14 +10,21 @@
 # lockfiles that carry no cross-file coupling. List only what is hand-coupled:
 # a new source module, doc, or manifest that needs a group of its own also
 # belongs here — the `[untracked]` failure message does not say so.
+#
+# Paths come in two spellings, the crate at the root (`src/`) and a workspace
+# member (`crates/*/src/`), because the same file serves both and moving a crate
+# under `crates/` must need no edit. A literal path that is missing logs a
+# warning on every run, so the one-file sources use a brace glob instead.
 require_tracked:
   - "src/**"
+  - "crates/*/src/**"
   - "www/**"
   - "README.md"
   - "CHANGELOG.md"
   - "CONTRIBUTING.md"
   - "AGENTS.md"
   - "Cargo.toml"
+  - "crates/*/Cargo.toml"
   - "Justfile"
   - "flake.nix"
 groups:
@@ -26,9 +33,9 @@ groups:
   # needing a look. src/main.rs only exists for crate_kind == "bin".
   - name: {% if crate_kind == "bin" %}cli-docs{% else %}api-docs{% endif %}
     source:
-      - src/lib.rs
+      - "{src,crates/*/src}/lib.rs"
 {%- if crate_kind == "bin" %}
-      - src/main.rs
+      - "{src,crates/*/src}/main.rs"
 {%- endif %}
     dependents:
       - README.md
@@ -39,6 +46,7 @@ groups:
   - name: release-notes
     source:
       - Cargo.toml
+      - "crates/*/Cargo.toml"
     dependents:
       - CHANGELOG.md
 

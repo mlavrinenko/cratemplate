@@ -145,7 +145,7 @@ worth knowing:
 ## Copy-Paste Gate
 
 `just check-dry` runs [jscpd](https://github.com/kucherenko/jscpd) over `src/`
-and `tests/` and fails on any duplicated Rust block of >=70 tokens. Fix a
+and `tests/` (`crates/` in a workspace) and fails on any duplicated Rust block of >=70 tokens. Fix a
 finding by extracting a shared helper — never by shuffling tokens until the
 detector loses the scent.
 

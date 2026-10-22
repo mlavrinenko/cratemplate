@@ -66,6 +66,9 @@ validate KIND='bin':
 
     git add -A
 
+    # A copy for the workspace stage below, taken before anything builds.
+    cp -r . "$WORK_DIR/workspace"
+
     # Fed to `bash -s` over a QUOTED heredoc, not `bash -c '...'`. Same
     # semantics (no expansion by the outer shell), but an apostrophe in the body
     # is inert: inside a single-quoted string one would close the quote early
@@ -214,6 +217,42 @@ validate KIND='bin':
         git ls-remote --exit-code --tags origin refs/tags/v0.1.0 >/dev/null || { echo "release did not push v0.1.0" >&2; exit 1; }
         test "$(grep -c '^## \[0\.1\.0\] - ' CHANGELOG.md)" = 1 || { echo "the re-run dated the CHANGELOG twice" >&2; exit 1; }
     INNER
+
+    # The same project as a workspace, which is what a project grows into: the
+    # crate moves under crates/ and a second member joins it (see
+    # scripts/to-workspace.sh). The template must gate it with no edit. This
+    # runs on a copy taken before any gate ran, so it holds no build output and
+    # no release commits. `nix build` and `nix run` are here because a virtual
+    # workspace has no root package for naersk to name the binary after.
+    step "Converting a copy to a workspace and gating it"
+    cd "$WORK_DIR/workspace"
+    bash "$TEMPLATE_DIR/scripts/to-workspace.sh" .
+    git add -A
+    KIND="$kind" nix develop --command bash -s <<'WORKSPACE'
+        set -eo pipefail
+        command -v cargo >/dev/null || { echo "not in the dev shell" >&2; exit 1; }
+        unset BASH_ENV
+
+        test -d crates && ! test -d src || { echo "the copy is not a workspace" >&2; exit 1; }
+        just outdatty-update
+        just check
+        just fix-check
+        just cover
+        just crap
+        just deny
+
+        # The doctest of the second member runs, and its summary shows.
+        out=$(just test) || { echo "$out" >&2; exit 1; }
+        grep -q '^test result: ok\. [1-9]' <<<"$out" || { echo "the doctest pass lost its summary: $out" >&2; exit 1; }
+
+        git add -A
+        nix build .#default
+        if [ "$KIND" = bin ]; then
+            nix run .#default -- --help >/dev/null
+        fi
+    WORKSPACE
+
+    cd "$WORK_DIR/$PROJECT_NAME"
 
     # `nix develop` silently re-resolves (and rewrites flake.lock in place) if
     # the shipped lock ever drifts from flake.nix's inputs. The pre-nix cmp

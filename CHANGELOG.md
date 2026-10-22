@@ -140,6 +140,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The gates cover a Cargo workspace as well as one crate.** A project that
+  moves its crates under `crates/` needs no edit to the template's files:
+  `Justfile` reads the source roots from whether `crates/` exists
+  (`_lcov-stale-reason`, `check-dry`, `eject`), the mmz `rust` and `manifests`
+  scopes and outdatty's sources name `crates/` beside `src/`, and `flake.nix`
+  sets a `pname`, without which `nix run` looked for the binary of
+  `rust-workspace-unknown`. The doctest pass prints five lines per member even
+  with no doctest, so `just test` now shows it only on failure. `just validate`
+  converts a copy of the generated project to a workspace (a second member with
+  a doctest) and gates that too. Release files still read the crate name from
+  the root `Cargo.toml`.
+
 - **Worktrunk delegation ships in the template.** Hooks in a user's own config
   don't travel with a clone, and without them `wt merge` squashes the branch,
   commits a dirty tree and runs no gate. A generated crate now carries

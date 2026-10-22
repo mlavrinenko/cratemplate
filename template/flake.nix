@@ -33,9 +33,18 @@
         llvm = pkgs.llvmPackages_21.llvm;
       in
       {
-        # For `nix build` & `nix run`:
+        # For `nix build` & `nix run`. `pname` is set because a virtual workspace
+        # has no root `[package]`: naersk then falls back to
+        # `rust-workspace-unknown` and `nix run` looks for a binary of that name.
+        # It names the binary `nix run` starts, so point it at the right crate's
+        # when the project becomes a workspace. The version is the workspace's,
+        # else the package's.
         packages.default = naersk'.buildPackage {
           src = ./.;
+          pname = "{{project-name}}";
+          version =
+            let cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+            in cargoToml.workspace.package.version or cargoToml.package.version;
         };
 
         # For `nix develop`:
