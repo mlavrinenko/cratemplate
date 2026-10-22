@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **A green `just machete`, `just deny` and `just test` print less.**
+  `machete` shows its output only when it fails (its banner said "found
+  nothing" in three lines), `deny` passes `-L error` (43 lines of duplicate
+  version warnings down to 1), and `test` passes `--cargo-quiet` to nextest
+  so a first build prints no `Compiling` lines.
+
 ### Fixed
 
 - **`just mutants` failed in every generated project.** cargo-mutants 27

@@ -75,14 +75,15 @@ outdatty-update:
 # not run doctests, so a second pass covers them. The doctest pass prints five
 # lines per workspace member even with no doctests at all, so its output shows
 # only when it fails and otherwise keeps just the summaries of members that ran
-# a doctest.
+# a doctest. `--cargo-quiet` drops cargo's `Compiling` lines, which a first
+# build prints by the hundred.
 #
 # `[positional-arguments]` + `"$@"`: ARGS still reach both passes (a plain
 # substring filter works for both), but interpolating the variadic would
 # re-split a filter containing spaces and re-glob a wildcard.
 [positional-arguments]
 test *ARGS:
-    cargo nextest run --workspace "$@"
+    cargo nextest run --workspace --cargo-quiet "$@"
     out=$(cargo test --workspace --doc -q "$@" 2>&1) || { printf '%s\n' "$out"; exit 1; }; grep -E '^test result: ok\. [1-9]' <<<"$out" || true
 
 # Run clippy only
@@ -212,9 +213,11 @@ fmt:
 fmt-check:
     cargo fmt --all -- --check
 
-# Check for unused dependencies
+# Check for unused dependencies. cargo-machete has no quiet flag and prints a
+# three-line banner to say it found nothing, so its output shows only when it
+# fails.
 machete:
-    cargo machete
+    out=$(cargo machete 2>&1) || { printf '%s\n' "$out"; exit 1; }
 
 # Count tests across the workspace. `cargo nextest list` reads the suite
 # without running it, so the count no longer depends on the runner's output
@@ -293,8 +296,13 @@ check-dry:
 # the identical verdict. The graph is what you want when you are chasing one
 # finding, not what you want on every green run — re-run without the flag then,
 # which is one word and a fresh answer.
+#
+# `-L error` because `bans` warns once per duplicate version in the lock, six
+# lines each, and the list grows with the tree. Measured in corpuspeak, at six:
+# **43 lines to say all three are ok**, against 1. Errors still print in full;
+# drop the flag to see the duplicates.
 deny:
-    cargo deny check --hide-inclusion-graph advisories licenses bans
+    cargo deny -L error check --hide-inclusion-graph advisories licenses bans
 
 # List dependencies with newer versions available. Needs network, and is a dev
 # aid rather than a gate: an upstream release is not a reason for CI to go red.
