@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`just mutants` failed in every generated project.** cargo-mutants 27
+  rejects the `exclude` key in `.cargo/mutants.toml`; the template now writes
+  `exclude_globs`, and spells the bin's entry point `**/src/main.rs` so it
+  matches in a workspace member too.
+
 - **Comments claimed `cargo llvm-cov nextest` ignores `--status-level`; it
   doesn't.** Measured on cargo-llvm-cov 0.9.0 and cargo-nextest 0.9.143: in a
   one-crate repro the flag takes 2 `PASS` lines to 0, and in a generated project
