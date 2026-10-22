@@ -312,22 +312,36 @@ fork SLUG *ARGS:
     wt switch --create --yes "$@"
 
 # Run in the worktree. `--no-squash --no-commit` keeps every branch commit as it
-# is and refuses a dirty tree instead of committing it; the `pre-merge`
-# hooks in .config/wt.toml run the gate and the task check before the
-# fast-forward, and `pre-remove` carries the gate records and coverage over.
+# is and refuses a dirty tree instead of committing it. The rebase merges
+# CHANGELOG.md as a union and keeps the target's outdatty.lock (.gitattributes),
+# so two lanes that each add an entry land without a conflict. The `pre-merge`
+# hooks in .config/wt.toml then record the merged tree in the lock, run the gate
+# and the task check before the fast-forward, and `pre-remove` carries the gate
+# records and coverage over.
 # Gate, fast-forward the branch onto main and remove its worktree
 [positional-arguments]
 land *ARGS:
     wt merge --no-squash --no-commit --yes "$@"
+
+# Two scratch lanes that both add a CHANGELOG entry and re-confirm
+# outdatty.lock, landed one after the other with `just fork` and `just land`
+# in a repo under /tmp. Silent on green. Run it after touching .gitattributes,
+# the land recipe, .config/wt.toml or .just/scripts/wt-lock.sh.
+land-repro:
+    bash .just/scripts/land-repro.sh
 
 # Point git at the tracked pre-commit hook (`.githooks/pre-commit` asserts
 # `mmz --is-fresh --tag gate` against the worktree, running nothing of its
 # own). The dev shell runs this recipe from shellHook on entry, so a fresh
 # clone's first `nix develop` wires the hook and edits to the tracked file
 # take effect live (no copy to refresh). Bypass a single commit with
-# `git commit --no-verify`.
+# `git commit --no-verify`. It also defines the `outdatty` merge driver that
+# .gitattributes names for outdatty.lock: `true`, which leaves the target's copy
+# in place for .just/scripts/wt-lock.sh to refresh.
 install-hooks:
     git config core.hooksPath .githooks
+    git config merge.outdatty.name "keep the target's outdatty.lock"
+    git config merge.outdatty.driver true
     rm -f .git/hooks/pre-commit
     chmod +x .githooks/pre-commit
     echo "installed .githooks"

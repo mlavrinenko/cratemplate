@@ -140,6 +140,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Two parallel lanes land without a conflict.** Two `just fork` lanes that
+  each add a CHANGELOG entry and re-confirm `outdatty.lock` stopped the second
+  `just land` on both files. A generated crate now ships `.gitattributes`
+  (`CHANGELOG.md` merges as a union, `outdatty.lock` goes to an `outdatty` merge
+  driver that `just install-hooks` defines and that keeps main's copy). The
+  `pre-merge` hooks in `.config/wt.toml` run `.just/scripts/wt-lock.sh`:
+  `refresh` re-records the merged tree with `outdatty update` when the check is
+  red, and `amend` folds the lock into the lane's last commit once the gate
+  passed. `just land-repro` replays two such lanes in a scratch repo under
+  /tmp, and `just validate` runs it. A line both lanes reworded stays twice in
+  the changelog: read it after landing. Ported from corpuspeak (779d3b8).
+
 - **The gates cover a Cargo workspace as well as one crate.** A project that
   moves its crates under `crates/` needs no edit to the template's files:
   `Justfile` reads the source roots from whether `crates/` exists

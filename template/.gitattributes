@@ -1,0 +1,7 @@
+# Two lanes that each append to [Unreleased] edit the same spot. A union merge
+# keeps both sides' lines, which is what two new bullets want.
+CHANGELOG.md merge=union
+# outdatty.lock holds a hash per coupled file, so two lanes touching one file
+# touch one line. The `outdatty` driver (`just install-hooks` sets it) keeps
+# the target's copy and .just/scripts/wt-lock.sh records the merged tree.
+outdatty.lock merge=outdatty

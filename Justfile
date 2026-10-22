@@ -151,6 +151,12 @@ validate KIND='bin':
             || { echo "wt does not read .config/wt.toml" >&2; exit 1; }
         bash "$TEMPLATE_DIR/scripts/test-wt-carry-lcov.sh" .
 
+        # Two lanes that each add a CHANGELOG entry and re-confirm outdatty.lock
+        # land one after the other with no conflict, through the real recipes
+        # in a scratch repo.
+        echo "--- Verifying two parallel lanes land conflict-free"
+        just land-repro
+
         echo "--- Verifying nix build (package) in a clean sandbox"
         git add -A
         nix build .#default

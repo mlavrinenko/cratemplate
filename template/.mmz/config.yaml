@@ -82,13 +82,15 @@ scopes:
   lcov:
     - "target/coverage/lcov.info"
 
-  # The release config, the worktrunk hooks and their scripts are outdatty
-  # `dev-docs` SOURCES (they decide what AGENTS.md and CONTRIBUTING.md say a
-  # release refuses and a land runs), so only the outdatty gate re-runs when
-  # they change. `just release` and `just land` are not gates.
+  # The release config, the worktrunk hooks, their scripts and the merge rules in
+  # .gitattributes are outdatty `dev-docs` SOURCES (they decide what AGENTS.md
+  # and CONTRIBUTING.md say a release refuses and a land runs), so only the
+  # outdatty gate re-runs when they change. `just release` and `just land` are
+  # not gates.
   tooling-meta:
     - "release.toml"
     - ".config/wt.toml"
+    - ".gitattributes"
     - ".just/scripts/**"
 
   # Shared by every rule: the recipe bodies (Justfile), the dev shell they all

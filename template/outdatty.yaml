@@ -62,6 +62,7 @@ groups:
       - Justfile
       - release.toml
       - ".just/scripts/**"
+      - .gitattributes
       - .config/wt.toml
       - .config/nextest.toml
       - .mmz/config.yaml

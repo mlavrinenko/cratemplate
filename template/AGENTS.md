@@ -69,6 +69,15 @@
   MindTape and `mt` is installed (the dev shell does not ship it), else skips it.
   `pre-remove` imports the gate records into the primary checkout when its mmz
   has `mmz --import`, else skips that too.
+- Landing never stops on `CHANGELOG.md` or `outdatty.lock`.
+  [.gitattributes](.gitattributes) merges the changelog as a union, so two lanes'
+  new entries both stay (a line both reworded stays twice: read it after
+  landing), and gives the lock to the `outdatty` merge driver, which
+  `just install-hooks` defines and which keeps main's copy. The `pre-merge`
+  hooks in `.config/wt.toml` run `.just/scripts/wt-lock.sh`: `refresh` re-records
+  the merged tree with `outdatty update` when the check is red, and `amend`
+  folds the lock into the lane's last commit after the gate passes. `just
+  land-repro` replays two such lanes in a scratch repo under /tmp.
 - Eating your own dog food: the tool should use itself if applicable.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for project conventions and code standards.
