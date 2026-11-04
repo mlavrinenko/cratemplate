@@ -58,7 +58,13 @@
   red run leaves main pushed and no tag, and a re-run after fixing it changes
   nothing the first run did. A release whose workflow failed
   is finished on the same tag with `gh workflow run <release workflow> -f
-  tag=vX.Y.Z`; a pushed tag never moves.
+  tag=vX.Y.Z`; a pushed tag never moves. The workflow publishes through
+  crates.io Trusted Publishing, but crates.io attaches a publisher only to a
+  crate that already exists. For the first release, create a scoped API token
+  and store it as `CARGO_REGISTRY_TOKEN` (repository or the `crates-io`
+  environment); the workflow uses it and skips OIDC. Then add the Trusted
+  Publisher (owner, repository, workflow file, environment `crates-io`) and
+  delete the secret. Later tags need no secret.
 - Delegated work forks with `just fork <slug>` (a sibling worktree on a new
   branch, dev shell allowed) and lands with `just land` run in that worktree:
   it gates, fast-forwards main and removes the worktree. Both wrap

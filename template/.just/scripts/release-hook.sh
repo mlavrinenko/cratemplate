@@ -34,9 +34,21 @@ dirty=$(git status --porcelain | grep -Ev '^.. (Cargo\.toml|Cargo\.lock|CHANGELO
     || refuse "the working tree has uncommitted changes" "commit or discard them, then re-run"
 branch=$(git symbolic-ref --short -q HEAD || true)
 [ "$branch" = main ] || refuse "HEAD is on '${branch:-a detached commit}', not main" "git switch main"
-git fetch --quiet origin main || refuse "can't fetch 'origin main'" "check the network and the origin remote"
-git merge-base --is-ancestor origin/main HEAD \
-    || refuse "origin/main has commits that main lacks" "git pull --ff-only origin main, then re-run"
+fetch_rc=0
+git fetch --quiet origin main 2>/dev/null || fetch_rc=$?
+if [ "$fetch_rc" -ne 0 ]; then
+    ls_rc=0
+    git ls-remote --exit-code --heads origin main >/dev/null 2>&1 || ls_rc=$?
+    case "$ls_rc" in
+        0) refuse "can't fetch 'origin main'" "check the network and the origin remote" ;;
+        2) ;; # an empty remote has no main yet; the release pushes the first one
+        *) refuse "can't reach 'origin'" "check the network and the origin remote" ;;
+    esac
+fi
+if git rev-parse -q --verify refs/remotes/origin/main >/dev/null; then
+    git merge-base --is-ancestor origin/main HEAD \
+        || refuse "origin/main has commits that main lacks" "git pull --ff-only origin main, then re-run"
+fi
 if git rev-parse -q --verify "refs/tags/$tag" >/dev/null \
     || git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
     refuse "'$tag' already exists" "a pushed tag never moves; finish a failed release with: gh workflow run $workflow -f tag=$tag"

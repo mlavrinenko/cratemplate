@@ -187,7 +187,6 @@ validate KIND='bin':
         git branch -M main
         git init -q --bare "$origin"
         git remote add origin "$origin"
-        git push -q origin main
         remote_main() { git ls-remote origin refs/heads/main | cut -f1; }
 
         # The release's entries sit under [Unreleased], as an author leaves them.
@@ -198,6 +197,13 @@ validate KIND='bin':
         rm dirty.txt
         git commit -qam "add the first release's entry" --no-verify
 
+        # An empty origin has no main yet: the first release creates it.
+        out=$(GH_STUB_CI=success just release 0.1.0 --dry-run 2>&1) \
+            || { echo "$out" >&2; echo "release refused an empty origin" >&2; exit 1; }
+        grep -q "^dry run: every check passed\$" <<<"$out" || { echo "$out" >&2; exit 1; }
+        test -z "$(remote_main)" || { echo "--dry-run created origin main" >&2; exit 1; }
+
+        git push -q origin HEAD~1:refs/heads/main
         git push -q origin "$(git commit-tree 'HEAD~1^{tree}' -p HEAD~1 -m other):refs/heads/main"
         if out=$(just release 0.1.0 --dry-run 2>&1); then echo "release took an origin main that main lacks" >&2; exit 1; fi
         grep -q "^error: origin/main has commits that main lacks\$" <<<"$out" || { echo "$out" >&2; exit 1; }

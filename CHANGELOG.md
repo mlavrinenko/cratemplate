@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A generated project's first release works.** crates.io attaches a Trusted
+  Publisher only to a crate that already exists, so both release workflows use
+  a scoped `CARGO_REGISTRY_TOKEN` when present and skip the OIDC exchange, then
+  switch to OIDC once the secret is gone. `just release` also accepts an empty
+  origin, so the first push can create main.
+
 - **`just land` failed when a lane ended on a commit that only files a task.**
   `wt-lock.sh amend` put `outdatty.lock` into that last commit, which a
   commit-msg hook asking for a `Refs:` footer outside `tasks/` refuses. It now
