@@ -45,6 +45,10 @@ lto = true
 codegen-units = 1
 panic = "abort"
 
+[profile.mutants]
+inherits = "dev"
+debug = false
+
 [lints]
 workspace = true
 
