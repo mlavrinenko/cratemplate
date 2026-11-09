@@ -12,7 +12,10 @@
 
 
 = Scope
+- Do not implement until the release model is decided (see Notes).
 - `template/.just/scripts/release-hook.sh`: name the published crate without the root `[package]`.
 - `template/.github/workflows/release.yml`, `template/.github/workflows/release-lib.yml`: the same.
 - `just validate` releases a workspace project as well.
 
+= Notes
+The release model comes first: one publishable crate at the workspace root, or every member published separately. If the template keeps one publishable crate, reading the root manifest can stay and this task closes. If every member publishes, the hook and both workflows need a member list and per-member versions, which is a larger change than the `sed` fix this task names.
