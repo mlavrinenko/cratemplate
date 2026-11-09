@@ -31,6 +31,7 @@ step() { # step <what> <command...>: run quietly, show the log when it fails
 }
 
 mkdir "$tmp/bin"
+# shellcheck disable=SC2016 # a literal stub: $1/$@ expand in it, not here
 printf '#!/bin/sh\n[ "$1" = exec ] && { shift 2; exec "$@"; }\nexit 0\n' >"$tmp/bin/direnv"
 chmod +x "$tmp/bin/direnv"
 export PATH="$tmp/bin:$PATH"

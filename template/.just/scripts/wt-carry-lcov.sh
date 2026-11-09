@@ -31,7 +31,31 @@ fi
 # the lcov was written from, by the recipe `just crap` asks. The hook runs this
 # script through `direnv exec .` for the dev shell's `just`; without it the
 # answer is unanswered, which carries nothing.
-stale=$(cd "$here" && just _lcov-stale-reason 2>/dev/null) || stale=unanswered
+#
+# The recipe defers to .just/scripts/lcov-stale-reason.sh. The script's own
+# scratch test (scripts/test-wt-carry-lcov.sh) copies only the Justfile and
+# this hook, so when the helper is absent, repeat the same test here instead
+# of reading "unanswered" and dropping a fresh report.
+staleness() {
+    local report=target/coverage/lcov.info
+    if [ ! -f "$report" ]; then
+        echo "$report is missing"
+        return 0
+    fi
+    local roots=() d newer
+    for d in src tests crates; do [ ! -d "$d" ] || roots+=("$d"); done
+    if [ "${#roots[@]}" -eq 0 ]; then
+        return 0
+    fi
+    newer=$(find "${roots[@]}" -name '*.rs' -newer "$report" -print -quit)
+    if [ -n "$newer" ]; then
+        echo "$report predates $newer"
+    fi
+}
+
+stale=$(cd "$here" && just _lcov-stale-reason 2>/dev/null) \
+    || stale=$(cd "$here" && staleness) \
+    || stale=unanswered
 [ -z "$stale" ] || exit 0
 
 # llvm-cov writes absolute `SF:` paths, so they are rewritten to the primary
