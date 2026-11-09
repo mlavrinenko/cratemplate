@@ -1,0 +1,13 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "Requires the Renovate GitHub App (https://github.com/apps/renovate). Without that app installed, this file is inert.",
+    "Renovate owns only Nix flake inputs (flake.lock). Dependabot owns Cargo and GitHub Actions, so only the nix manager is enabled to avoid duplicate PRs.",
+    "Schedule is monthly on the first day (cron syntax, as recommended by Renovate)."
+  ],
+  "enabledManagers": ["nix"],
+  "nix": {
+    "enabled": true
+  },
+  "schedule": ["* * 1 * *"]
+}
