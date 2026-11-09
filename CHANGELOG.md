@@ -159,6 +159,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `outdatty-check` to pass at all. New source modules still trip the gate — the
   failure message now points at the manifest, which says to add them to a group.
 
+- **A generated project's first `just check` passes.** `outdatty-check`
+  bootstraps a missing `outdatty.lock` and asks for a review; an existing lock
+  is never refreshed, so real drift still fails. `outdatty.yaml` braces the
+  `Cargo.toml` globs so a single-crate project no longer warns, and the docs
+  note the one-time `Cargo.lock` miss. Bin, lib and workspace first checks are
+  green.
+
+- **A quote or line break in `description` is refused.** The placeholder regex
+  rejects `"`, `\`, CR/LF, the other C0 controls and DEL, and
+  `cargo-generate >= 0.16.0` enforces it before writing any file;
+  `scripts/test-description.sh` is the regression.
+
 ### Added
 
 - **Two parallel lanes land without a conflict.** Two `just fork` lanes that
@@ -207,6 +219,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`mmz --status`): which arms of `just check` would re-run, and whether the
   pre-commit hook's `mmz --is-fresh --tag gate` would pass right now. Reads
   mmz's records only — runs no gate.
+- **Template docs are generated from Typst sources.**
+  `template/docs/src/*.typ` render through `docs/generate-md.sh` (Typst and
+  typlite) into the committed `AGENTS.md`, `CONTRIBUTING.md` and `README.md`;
+  `docs-md-check` fails on a hand edit or a stale render. The sources are
+  variant-neutral, `typst`, `tinymist` and `typstyle` ship in the dev shell,
+  and root `just docs-sync` / `docs-check` regenerate and verify them. The
+  generated docs are leaner: AGENTS 17 lines/2.3 KB, CONTRIBUTING 96/6.7 KB,
+  README 38/1.1 KB.
+- **Static lint and rustdoc gates.** The template's `just check` runs
+  `lint::workflows` (actionlint), `lint::shellcheck` (warning level, every
+  tracked shebang script) and `lint::doc` (`RUSTDOCFLAGS=-D warnings cargo doc
+  --workspace --no-deps --document-private-items`); root `just lint` runs
+  actionlint and shellcheck over this repository too. Both tools ship in the
+  root and template dev shells.
+- **A commit refuses local machine paths.** The tracked
+  `.githooks/local-paths` scans the staged index for `$HOME`, the checkout and
+  the worktree's primary checkout, so a pasted log line cannot be committed;
+  `pre-commit` runs it and `just install-hooks` wires `core.hooksPath`.
+- **Dependency updates have owners.** Dependabot groups Cargo updates and
+  covers GitHub Actions monthly; Renovate enables only the Nix manager for
+  `flake.lock` (it needs the Renovate GitHub App installed).
+- **CI gates the backlog.** Root `just check-tasks` runs `mt check && mt fix
+  --check`, and `ci.yml` runs it as a step, so a malformed or stale task file
+  fails the build.
 
 ### Changed
 
@@ -263,6 +299,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `.linecop.yaml` and `outdatty.yaml` need no change. `just eject` now masks
   only linecop's finding exit (1), so a broken linecop (exit 2 since 0.5)
   fails the recipe instead of reading as nothing to eject.
+- **The template Justfile is a thin surface over scripts.**
+  `template/Justfile` drops from 411 to 205 lines, labels every recipe with
+  `[doc]`/`[group]`, and moves long bodies to `.just/scripts/`;
+  `.just/scripts/**` is now a `gates-meta` input, and the cover/CRAP globs work
+  in a workspace. Root `just validate` is 44 lines over `scripts/validate.sh`,
+  `scripts/test-release.sh` and `scripts/test-workspace.sh`, with both
+  `outdatty-update` calls gone.
+- **Coverage reports a per-file floor, CRAP speaks GitHub, mutants use
+  nextest.** `just cover` prints only the report header and TOTAL; the gate is
+  70% workspace line coverage plus 60% for any production file with at least 5
+  uncovered lines (tests excluded). `just crap` passes `--format github
+  --threshold 30 --fail-above` and excludes `**/main.rs`, so green is silent
+  and red names each offender. `.cargo/mutants.toml` runs mutants under
+  nextest across the workspace with `profile = "mutants"`.
+- **linecop measures hidden files.** Both configs set `include_hidden: true`;
+  the template caps BASH/Shell at 200, Just at 210 and Typst at 250, and
+  excludes `**/CHANGELOG.md`. Root `just check-docs` runs both configs.
 
 ## [0.2.0] - 2026-07-31
 
