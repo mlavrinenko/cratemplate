@@ -43,6 +43,7 @@ instrument() {
 # Run as the `pre-remove` hook does: from the worktree root, the primary checkout
 # as the argument. It must exit 0 whatever happens; stderr comes back.
 carry() {
+    # shellcheck disable=SC2069 # stderr is the output; stdout is dropped
     (cd "$wt" && env -u BASH_ENV bash "$script" "$1" 2>&1 >/dev/null) \
         || fail "$case_name: the script failed"
 }

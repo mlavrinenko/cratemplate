@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mlavrinenko/linecop/v0.7.0/linecop-schema.json
+#
+# linecop — this repository's own sources, docs and maintenance scripts.
+# `template/` has its own config and is excluded here.
+limits:
+  Markdown: 200
+  Just: 45
+  Shell: 180
+  Nix: 250
+
+count_mode: total
+
+include_hidden: true
+
+exclude_dirs:
+  - target
+  - archive
+  - template
+  - .direnv
+
+overrides:
+  - pattern: "./README.md"
+    limit: 60
+    max_bytes: 5000
+  - pattern: "./AGENTS.md"
+    limit: 20
+    max_bytes: 2000
+  - pattern: "./CHANGELOG.md"
+    limit: 1000
+    max_bytes: 60000
+  - pattern: "docs/research/*.md"
+    limit: 650
+    max_bytes: 60000
+  - pattern: "./Justfile"
+    limit: 45
+    max_bytes: 4000
+  - pattern: "scripts/*.sh"
+    limit: 180
+    max_bytes: 15000
