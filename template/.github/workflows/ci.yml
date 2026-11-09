@@ -58,7 +58,7 @@ jobs:
           purge-created: 0
           purge-primary-key: never
 
-      - name: Coverage (fails under 70%)
+      - name: Coverage (70% total, 60% per file)
         run: nix develop --command just cover
 
       # CRAP metric: fails if a function is both complex and undertested,

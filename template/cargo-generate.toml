@@ -1,10 +1,18 @@
 [template]
-cargo_generate_version = ">=0.10.0"
+# 0.16.0 is the first release that validates `--define` values against a
+# placeholder's `regex` (cargo-generate#692); older releases would let an
+# unsafe description through.
+cargo_generate_version = ">=0.16.0"
 exclude = ["Justfile", "release.toml", ".config/wt.toml", "rust-toolchain.toml", "clippy.toml", "rustfmt.toml", ".envrc", ".gitignore", ".linecop.yaml", ".config/nextest.toml", ".mmz/config.yaml", ".mmz/.gitignore", ".github/workflows/ci.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml", ".github/workflows/release-lib.yml"]
 # outdatty.yaml is NOT in this list: its cli-docs group source list is
 # crate_kind-aware (src/main.rs only exists for bin), so it needs Liquid
 # rendering. It contains no GitHub `${{ }}` expressions, so this is safe —
 # unlike the workflow files above, which must stay excluded.
+# docs/src/**/*.typ and the Markdown it generates (AGENTS.md, and later
+# README.md/CONTRIBUTING.md) are deliberately NOT excluded either: the Liquid
+# pass must render the same `{{project-name}}` placeholder in the source and in
+# the committed output, so a generated project's docs-md-check compares like
+# against like instead of diffing a placeholder against a real name.
 # flake.lock is deliberately NOT ignored: generated projects inherit the
 # template's validated pins (qahq, nixpkgs, …). A project bumps them with
 # `nix flake update` on its own schedule; without the lock every generated
@@ -20,6 +28,13 @@ prompt = "GitHub username or org?"
 type = "string"
 prompt = "Project description?"
 default = "A Rust project"
+# The answer lands verbatim in Cargo.toml's basic string, the `///` doc
+# comment in src/main.rs, README.md and www/index.html. A double quote or
+# backslash would break the TOML string (or start an escape), and a line
+# break would break the doc comment, so reject every character a TOML basic
+# string cannot hold: quote, backslash, CR/LF, the other C0 controls and DEL
+# (tab stays legal). cargo-generate refuses the value before writing a file.
+regex = '\A[^"\\\x00-\x08\x0A-\x1F\x7F]*\z'
 
 [placeholders.license]
 type = "string"

@@ -65,6 +65,9 @@
             qahq.packages.${system}.mmz
             qahq.packages.${system}.outdatty
           ] ++ (with pkgs; [
+            # `just lint::workflows` and `just lint::shellcheck`.
+            actionlint
+            shellcheck
             rustc
             cargo
             cargo-llvm-cov
@@ -90,6 +93,13 @@
             just
             nixd
             rust-analyzer
+            # Docs pipeline: `typst eval` reads each source's metadata,
+            # `typlite` (from tinymist) renders it to Markdown, and `typstyle`
+            # formats the Typst sources. All three are nixpkgs packages pinned
+            # by flake.lock, so the template adds no flake input for docs.
+            typst
+            tinymist
+            typstyle
           ]);
           shellHook = ''
             export LLVM_COV=${llvm}/bin/llvm-cov

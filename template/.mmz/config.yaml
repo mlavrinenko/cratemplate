@@ -46,6 +46,21 @@ scopes:
   rust-clippy:
     - "clippy.toml"
 
+  # actionlint reads the workflows themselves; a workflow edit is exactly what
+  # this arm exists to catch.
+  workflows:
+    - ".github/workflows/**"
+
+  # Every tracked file the shellcheck arm can pick up: the repo's own scripts
+  # plus any script a project adds. The arm detects shebangs in the index, so
+  # the scope lists the hidden directories explicitly and adds `*.sh` for
+  # scripts a project keeps elsewhere.
+  shell-scripts:
+    - ".just/scripts/**"
+    - ".githooks/**"
+    - "scripts/**"
+    - "**/*.sh"
+
   # Cargo manifests only — cargo-machete reads these, not sources. A workspace
   # member has its own under `crates/`.
   manifests:
@@ -53,9 +68,12 @@ scopes:
     - "crates/*/Cargo.toml"
     - "Cargo.lock"
 
-  # linecop config — a limit or override change busts the file-size gate.
+  # linecop config plus the hidden scripts it measures — a limit, override or
+  # script edit busts the file-size gate.
   file-size-config:
     - ".linecop.yaml"
+    - ".just/scripts/**"
+    - ".githooks/**"
 
   # outdatty's own config + lock. Every dependent outdatty re-reads is covered
   # by `rust`/`docs` (outdatty.lock hashes their content), so a dependent edit
@@ -71,7 +89,22 @@ scopes:
     - "CONTRIBUTING.md"
     - "AGENTS.md"
     - "CHANGELOG.md"
+    - "docs/**"
     - "www/**"
+
+  # The Typst sources `just docs-md` renders, the committed Markdown they
+  # declare as output, and the generator plus helpers that decide the bytes.
+  docs-src:
+    - "docs/src/**"
+
+  docs-out:
+    - "AGENTS.md"
+    - "CONTRIBUTING.md"
+    - "README.md"
+
+  docs-meta:
+    - "docs/generate-md.sh"
+    - "docs/src/lib.typ"
 
   # `just crap` reads the lcov `just cover` wrote. It is gitignored (it lives
   # under target/), which is exactly why it is spelled as a LITERAL path: mmz's
@@ -92,12 +125,15 @@ scopes:
     - ".config/wt.toml"
     - ".gitattributes"
     - ".just/scripts/**"
+    - ".githooks/**"
+    - "docs/generate-md.sh"
 
-  # Shared by every rule: the recipe bodies (Justfile), the dev shell they all
-  # run in (flake.nix/flake.lock), and this manifest, which defines what "fresh"
-  # even means. Every formatter, linter and cargo tool comes from that shell, so
-  # a toolchain or tool-set bump must re-run every gate, machete included — and
-  # all of them are outdatty `dev-docs` SOURCES, so keeping them here stops
+  # Shared by every rule: the recipe bodies (Justfile and the scripts it
+  # delegates to), the dev shell they all run in (flake.nix/flake.lock), and
+  # this manifest, which defines what "fresh" even means. Every formatter,
+  # linter and cargo tool comes from that shell, so a toolchain or tool-set
+  # bump must re-run every gate, machete included — and all of them are
+  # outdatty `dev-docs` SOURCES, so keeping them here stops
   # `outdatty-check` reporting fresh after an edit to any. All content-hashed,
   # so an untouched file contributes no churn.
   # `.config/nextest.toml` is a recipe body in every sense that matters here:
@@ -108,6 +144,8 @@ scopes:
   # survives an edit to it.
   gates-meta:
     - "Justfile"
+    - ".just/*.just"
+    - ".just/scripts/**"
     - ".config/nextest.toml"
     - "flake.nix"
     - "flake.lock"
@@ -152,11 +190,31 @@ commands:
     tags: [gate]
     inputs: [rust, gates-meta]
 
+  # actionlint only reads .github/workflows/, shellcheck only the tracked
+  # shebang scripts, and rustdoc reads the crate's docs plus its sources.
+  - name: just lint::workflows
+    tags: [gate]
+    inputs: [workflows, gates-meta]
+
+  - name: just lint::shellcheck
+    tags: [gate]
+    inputs: [shell-scripts, gates-meta]
+
+  - name: just lint::doc
+    tags: [gate]
+    inputs: [rust, gates-meta]
+
   # outdatty re-reads every dependent's current content and compares it to the
   # lock; `outdatty-config` covers the lock and the group definitions directly.
   - name: just outdatty-check
     tags: [gate]
     inputs: [outdatty-config, rust, docs, tooling-meta, gates-meta]
+
+  # The docs renderer compares a fresh typlite render with the committed
+  # Markdown: a source, output, generator or recipe edit must re-run it.
+  - name: just docs-md-check
+    tags: [gate]
+    inputs: [docs-src, docs-out, docs-meta, gates-meta]
 
   # Untagged from here down: these run outside `just check` (CI runs them in
   # their own job), so they stay out of the gate set. Memoized only so a no-op

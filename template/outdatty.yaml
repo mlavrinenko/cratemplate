@@ -16,20 +16,19 @@
 # under `crates/` must need no edit. A literal path that is missing logs a
 # warning on every run, so the one-file sources use a brace glob instead.
 require_tracked:
-  - "src/**"
-  - "crates/*/src/**"
+  - "{src,crates/*/src}/**"
   - "www/**"
+  - "docs/**"
   - "README.md"
   - "CHANGELOG.md"
   - "CONTRIBUTING.md"
   - "AGENTS.md"
-  - "Cargo.toml"
-  - "crates/*/Cargo.toml"
+  - "{Cargo.toml,crates/*/Cargo.toml}"
   - "Justfile"
   - "flake.nix"
 groups:
   # The public surface (CLI for a bin, the library API for a lib) is
-  # documented by hand. Touching the code flags the user-facing docs as
+  # documented for users. Touching the code flags the user-facing docs as
   # needing a look. src/main.rs only exists for crate_kind == "bin".
   - name: {% if crate_kind == "bin" %}cli-docs{% else %}api-docs{% endif %}
     source:
@@ -45,27 +44,36 @@ groups:
   # changelog.
   - name: release-notes
     source:
-      - Cargo.toml
-      - "crates/*/Cargo.toml"
+      - "{Cargo.toml,crates/*/Cargo.toml}"
     dependents:
       - CHANGELOG.md
+
+  # The committed Markdown is rendered from docs/src/**; a source edit means the
+  # generated output needs re-rendering and re-confirmation.
+  - name: generated-docs
+    source:
+      - "docs/src/**"
+    dependents:
+      - README.md
+      - AGENTS.md
+      - CONTRIBUTING.md
 
   # The dev tooling and conventions documented for contributors track the
   # files that define them: the dev shell, the recipes, the test runner's own
   # profile, and the gate memoization rules that decide when a recipe re-runs.
   # `.config/nextest.toml` is a recipe body in practice — `status-level` lives
-  # there once, for `just test` and `just cover` — so an edit to it changes what
-  # CONTRIBUTING.md and AGENTS.md describe.
+  # there once, for `just test` and `just cover` — so an edit to it changes the
+  # docs sources, which the generated-docs group then re-confirms.
   - name: dev-docs
     source:
       - flake.nix
       - Justfile
       - release.toml
       - ".just/scripts/**"
+      - docs/generate-md.sh
       - .gitattributes
       - .config/wt.toml
       - .config/nextest.toml
       - .mmz/config.yaml
     dependents:
-      - CONTRIBUTING.md
-      - AGENTS.md
+      - "docs/src/**"
