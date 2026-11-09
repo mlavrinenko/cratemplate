@@ -3,6 +3,10 @@ set -eo pipefail
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
 
+# A path under this machine's $HOME or checkout must never reach a commit:
+# the index is what the commit will contain.
+"$root/.githooks/local-paths"
+
 # outdatty.lock records the coupled sources' hashes. A commit whose sources
 # moved while the lock stayed behind leaves the committed tree stale, and the
 # mmz check below cannot see it: that check reads the worktree, where the
