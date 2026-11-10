@@ -37,7 +37,10 @@
         # `nix fmt` cannot disagree with the gate.
         formatter = pkgs.nixfmt;
 
-        # For `nix build` & `nix run`. `pname` is set because a virtual workspace
+        # For `nix build` & `nix run`. naersk cannot build a crate whose
+        # manifest takes a git dependency, so `nix build` fails on one; a crate
+        # that takes one needs a different builder. The template has none, so
+        # the package keeps naersk. `pname` is set because a virtual workspace
         # has no root `[package]`: naersk then falls back to
         # `rust-workspace-unknown` and `nix run` looks for a binary of that name.
         # It names the binary `nix run` starts, so point it at the right crate's
