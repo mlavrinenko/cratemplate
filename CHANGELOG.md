@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The template's tool set moves to qahq `58f9ec9`.** Generated projects
+  get canibump, mindtape 0.5.0, jscpd 5.4.1 (clone baselines and near-miss
+  detection) and cargo-crap 0.3.1 (native CRAP baselines), with linecop,
+  outdatty and mmz moving to their current releases. The pin is a commit, not
+  a branch, so a generated `flake.lock` keeps the exact tool set.
+
 - **A green `just machete`, `just deny` and `just test` print less.**
   `machete` shows its output only when it fails (its banner said "found
   nothing" in three lines), `deny` passes `-L error` (43 lines of duplicate
