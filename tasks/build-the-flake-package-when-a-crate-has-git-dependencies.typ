@@ -1,28 +1,23 @@
-#import "@local/mindtape:0.2.0": *
+#import "@local/mindtape:0.4.0": *
 #show: task.with(
-  title: "Build the flake package when a crate has git dependencies",
+  title: "Document the flake package's git-dependency limit",
   priority: framework("ice", confidence: 0.9, ease: 8.0, impact: 3.0),
   difficulty: 1,
   estimate: (files: 2),
-  status: proposed(2026, 10, 10),
+  status: accepted(2026, 11, 11),
+  links: parent("land-the-corrected-renovation-backlog.typ"),
 )
 
 = Summary
-`template/flake.nix` builds with naersk, which cannot build git dependencies,
-so `nix build` fails once a crate takes one; the README also promises a
-crates.io install that a git dependency makes impossible. nix-why-build
-switched to `buildRustPackage` (a344cd5). The decision here is the opposite:
-document both limits and keep naersk, because switching the package builder
-for a case the template does not yet have would rewrite the build for every
-project.
+
+`template/flake.nix` builds with naersk, which cannot build git dependencies, so `nix build` fails once a generated crate takes one. The install prose also promises a crates.io path that a git dependency makes impossible. Document both limits and keep naersk; do not rewrite the package builder for a case the template does not have.
 
 = Scope
-- `template/flake.nix`: add a comment at `packages.default = naersk'.buildPackage`
-  saying naersk cannot build git dependencies and a crate that takes one needs
-  a different builder.
-- `template/README.md` (or `docs/src/readme.typ` after the docs pipeline): in
-  the install section, state that a git dependency makes the crates.io install
-  impossible; keep the binary-release path.
-- Do not switch to `buildRustPackage` and do not add a git dependency.
-- Validate a generated bin and lib still pass `nix build .#default`; the
-  git-dependency failure cannot be exercised without taking one.
+
+- `template/flake.nix`: at `packages.default = naersk'.buildPackage`, comment that naersk cannot build git dependencies and a crate that takes one needs a different builder.
+- `template/docs/src/readme.typ`: in the install section, state that a git dependency makes the crates.io install impossible; keep the binary-release path.
+- Do not switch to `buildRustPackage`, add a git dependency, or build and switch builders in this task.
+
+= Notes
+
+The template has no git dependency, so the failure cannot be exercised; the comment and the prose are the whole deliverable.

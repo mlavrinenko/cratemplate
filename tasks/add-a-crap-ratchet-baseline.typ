@@ -4,23 +4,25 @@
   priority: framework("ice", confidence: 0.75, ease: 5.0, impact: 4.0),
   difficulty: 4,
   estimate: (files: 7),
-  status: proposed(2026, 11, 9),
+  status: accepted(2026, 11, 11),
   tags: ("template", "gating", "tooling"),
+  links: parent("land-the-corrected-renovation-backlog.typ"),
 )
 
 = Summary
 
-`just crap` uses a fixed absolute threshold of 30. A function that improves from 90 to 70 still passes and can rot back to 89. A committed baseline lets the gate ratchet down without raising the absolute threshold, so an already-bad function cannot get worse while the tree is being cleaned up.
+`just crap` uses a fixed absolute threshold of 30, so a function that improves from 90 to 70 still passes and can rot back to 89. A committed baseline lets the gate ratchet down without raising the absolute threshold, so an already-bad function cannot get worse while the tree is cleaned up.
 
 = Scope
 
-- Add `template/.config/crap-baseline.json`: per file and function, the score and coverage from a known-good run.
-- `.just/scripts/crap.sh` (after the Justfile restructure): fail when a function is above its baseline score or above 30; an equal or better score passes. A function absent from the baseline is held to the absolute threshold.
-- `template/Justfile`: `crap-baseline` updates the file deliberately; the gate never writes it.
-- `template/.mmz/config.yaml`: add the baseline file to `just crap` inputs; `just crap` stays untagged and outside `just check`.
-- `template/CONTRIBUTING.md`/`AGENTS.md`: one sentence about the baseline after the docs slimming task; do not repeat the CRAP rationale.
-- Validate a generated bin and lib: a worse score fails, an equal or better score passes, and `just crap-baseline` changes the file.
+- Add `template/.config/crap-baseline.json`, generated with `cargo crap --format json --sort file --output .config/crap-baseline.json`.
+- `template/.just/scripts/crap.sh`: keep the stale-lcov refusal and the three excludes, and gate with `--format github --threshold 30 --fail-above --baseline .config/crap-baseline.json --fail-regression --sort file`. cargo-crap 0.3.1 supplies every flag; no custom JSON comparator.
+- A missing baseline is a hard failure. Never fall back to the absolute threshold.
+- `template/Justfile`: `crap-baseline` regenerates the file deliberately; the gate never writes it.
+- `template/.mmz/config.yaml`: add the baseline to `just crap` inputs as a literal path, like `lcov`.
+- `template/docs/src/contributing.typ`: one sentence about the baseline, after the docs slimming task; do not repeat the CRAP rationale.
+- Validate a generated bin and lib: a worse score fails, an equal or better score passes, and the workspace path is covered too.
 
 = Notes
 
-The absolute threshold stays; the baseline is a second, tighter bound. Deleting the baseline must not silently pass the gate: a missing file falls back to the absolute threshold and says so.
+The ratchet only holds after `crap-baseline` is deliberately updated: a later score can still rise to the old baseline, and only a fresh baseline tightens it.
