@@ -132,3 +132,19 @@ jobs:
           toolchain: ${{ steps.msrv.outputs.version }}
       - name: Check
         run: cargo check --workspace --all-targets
+
+  windows:
+    name: Windows (MSVC)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6.0.3
+      # The release matrix still owns the binaries; this job only makes an
+      # early Windows failure visible before a tag decides the version.
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # stable channel pinned below
+        with:
+          toolchain: stable
+      # No --locked: a fresh project need not commit Cargo.lock.
+      - name: Check
+        run: cargo check --workspace --all-targets
+      - name: Test (build only)
+        run: cargo test --no-run
