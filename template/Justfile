@@ -10,6 +10,9 @@ set unstable
 # Static gates: actionlint, shellcheck and rustdoc warnings.
 mod lint '.just/lint.just'
 
+# On-demand tooling: Nix formatting, secret scans and upstream workaround checks.
+mod tools '.just/tools.just'
+
 # Workspace members live under crates/; a root crate keeps src/ and tests/.
 rust_roots := if path_exists("crates") == "true" { "crates" } else { "src tests" }
 
@@ -31,7 +34,7 @@ fix-check: eject clippy-fix fmt check
 [doc("Run every gate, each memoized by mmz")]
 [group("workflow")]
 [parallel]
-check: (mmz "fmt-check") (mmz "clippy") (mmz "test") (mmz "machete") (mmz "check-file-size") (mmz "check-dry") (mmz "outdatty-check") (mmz "docs-md-check") (mmz "lint::workflows") (mmz "lint::shellcheck") (mmz "lint::doc")
+check: (mmz "fmt-check") (mmz "clippy") (mmz "test") (mmz "machete") (mmz "check-file-size") (mmz "check-dry") (mmz "outdatty-check") (mmz "tools::nix-fmt-check") (mmz "docs-md-check") (mmz "lint::workflows") (mmz "lint::shellcheck") (mmz "lint::doc")
 
 [doc("Run a recipe through mmz memoization")]
 [group("workflow")]
@@ -106,6 +109,7 @@ _lcov-stale-reason:
 fmt:
     cargo fmt --all
     just --fmt
+    just tools::nix-fmt
     typstyle --inplace docs
 
 [doc("Check formatting without writing changes")]

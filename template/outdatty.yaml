@@ -68,6 +68,7 @@ groups:
     source:
       - flake.nix
       - Justfile
+      - ".just/*.just"
       - release.toml
       - ".just/scripts/**"
       - docs/generate-md.sh

@@ -42,6 +42,11 @@ scopes:
   rust-fmt:
     - "rustfmt.toml"
 
+  # Every Nix file the formatter and `nix fmt` cover. A new module must bust
+  # the check even before flake.nix imports it.
+  nix:
+    - "**/*.nix"
+
   # cargo clippy's config — edits change the lint surface.
   rust-clippy:
     - "clippy.toml"
@@ -157,6 +162,12 @@ commands:
   - name: just fmt-check
     tags: [gate]
     inputs: [rust, rust-fmt, gates-meta]
+
+  # nixfmt reads every *.nix in the tree (target/ excluded). The `nix` scope
+  # covers new files; flake.nix and the recipe body are in gates-meta too.
+  - name: just tools::nix-fmt-check
+    tags: [gate]
+    inputs: [nix, gates-meta]
 
   - name: just clippy
     tags: [gate]

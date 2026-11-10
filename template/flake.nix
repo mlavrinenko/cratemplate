@@ -33,6 +33,10 @@
         llvm = pkgs.llvmPackages_21.llvm;
       in
       {
+        # The same nixfmt the dev shell and `just tools::nix-fmt-check` use, so
+        # `nix fmt` cannot disagree with the gate.
+        formatter = pkgs.nixfmt;
+
         # For `nix build` & `nix run`. `pname` is set because a virtual workspace
         # has no root `[package]`: naersk then falls back to
         # `rust-workspace-unknown` and `nix run` looks for a binary of that name.
@@ -43,8 +47,10 @@
           src = ./.;
           pname = "{{project-name}}";
           version =
-            let cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
-            in cargoToml.workspace.package.version or cargoToml.package.version;
+            let
+              cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+            in
+            cargoToml.workspace.package.version or cargoToml.package.version;
         };
 
         # For `nix develop`:
@@ -64,7 +70,8 @@
             # asserts a prior pass without running anything.
             qahq.packages.${system}.mmz
             qahq.packages.${system}.outdatty
-          ] ++ (with pkgs; [
+          ]
+          ++ (with pkgs; [
             # `just lint::workflows` and `just lint::shellcheck`.
             actionlint
             shellcheck
@@ -91,6 +98,7 @@
             clippy
             rustfmt
             just
+            nixfmt
             nixd
             rust-analyzer
             # Docs pipeline: `typst eval` reads each source's metadata,
