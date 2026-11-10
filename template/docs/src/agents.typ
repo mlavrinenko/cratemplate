@@ -29,6 +29,9 @@
   `mod <name>;` in `tests/it/main.rs` (create it with the first one), never a
   top-level `tests/<name>.rs`. `just fix-check` ejects inline tests from
   oversized files.
+- Any config a crate reads ships a JSON schema generated from the crate's types
+  with `schemars`, never hand-written. Commit the schema beside the config and
+  add a test that fails when the committed copy drifts; follow canibump's shape.
 - Every arm of `just check` is `just mmz <subgate>`. A new or renamed gate needs
   its rule in #link(".mmz/config.yaml")[.mmz/config.yaml]. An unmatched
   invocation is a hard error, not a silent skip.
