@@ -41,6 +41,10 @@
   ),
 )
 
+A git dependency makes the crates.io install impossible: crates.io rejects a
+package whose dependency is not published there. A binary with such a dependency
+has no crates.io path, so release and install its binary instead.
+
 = Usage
 
 #doc-table(
