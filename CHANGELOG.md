@@ -23,6 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A release works in the workspace the template grows into.** The release
+  hook, `just release` and both release workflows read the crate name, version
+  and repository from the root `Cargo.toml`, which a virtual workspace root does
+  not have. They now share `.just/scripts/release-meta.sh`, which picks the one
+  publishable package from `cargo metadata` and refuses zero or several;
+  support members set `publish = false`. cargo-release resolves its
+  replacements and hook against the member directory, so the hook dates the
+  root CHANGELOG from `WORKSPACE_ROOT` and runs through it. A new workspace
+  release test proves `just release --dry-run` selects the crate, checks the
+  root CHANGELOG and pushes nothing.
+
 - **A generated project's first release works.** crates.io attaches a Trusted
   Publisher only to a crate that already exists, so both release workflows use
   a scoped `CARGO_REGISTRY_TOKEN` when present and skip the OIDC exchange, then

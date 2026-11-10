@@ -33,4 +33,8 @@ nix build .#default
 if [ "$KIND" = bin ]; then
     nix run .#default -- --help >/dev/null
 fi
+
+# The workspace release path: metadata selection, the root CHANGELOG and
+# cargo-release's workspace handling, against a stub origin and gh.
+bash "$TEMPLATE_DIR/scripts/test-release-workspace.sh"
 WORKSPACE

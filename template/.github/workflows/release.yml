@@ -32,11 +32,13 @@ concurrency:
 # actions to commit SHAs. Bump them with Dependabot's `github-actions` ecosystem.
 jobs:
   meta:
-    name: Resolve tag, version and binary
+    name: Resolve tag, crate, version and binary
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.meta.outputs.tag }}
       version: ${{ steps.meta.outputs.version }}
+      crate: ${{ steps.meta.outputs.crate }}
+      repository: ${{ steps.meta.outputs.repository }}
       binary: ${{ steps.meta.outputs.binary }}
       latest: ${{ steps.meta.outputs.latest }}
     steps:
@@ -45,16 +47,23 @@ jobs:
         with:
           ref: refs/tags/${{ inputs.tag || github.ref_name }}
           fetch-depth: 0
+      # release-meta.sh reads `cargo metadata`; the runner ships the jq it also
+      # needs, and the helper refuses with a hint if either is missing.
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # stable channel pinned below
+        with:
+          toolchain: stable
       - id: meta
         env:
           TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          name=$(sed -n 's/^name = "\(.*\)"/\1/p' Cargo.toml | head -1)
-          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
-          # The tag must match the Cargo.toml version, otherwise `cargo publish`
+          crate=$(bash .just/scripts/release-meta.sh crate)
+          version=$(bash .just/scripts/release-meta.sh version)
+          repository=$(bash .just/scripts/release-meta.sh repository)
+          binary=$(bash .just/scripts/release-meta.sh binary)
+          # The tag must match the crate version, otherwise `cargo publish`
           # would ship a different version than the tag implies.
           if [ "$TAG" != "v$version" ]; then
-            echo "::error::tag $TAG does not match Cargo.toml version $version"
+            echo "::error::tag $TAG does not match the $crate version $version"
             exit 1
           fi
           # Re-releasing an old tag must not take "Latest" from a newer one.
@@ -64,7 +73,9 @@ jobs:
           {
             echo "tag=$TAG"
             echo "version=$version"
-            echo "binary=$name"
+            echo "crate=$crate"
+            echo "repository=$repository"
+            echo "binary=$binary"
             echo "latest=$latest"
           } >> "$GITHUB_OUTPUT"
 
@@ -184,14 +195,15 @@ jobs:
       - name: Publish unless already on crates.io
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN || steps.auth.outputs.token }}
-          CRATE: ${{ needs.meta.outputs.binary }}
+          CRATE: ${{ needs.meta.outputs.crate }}
+          REPOSITORY: ${{ needs.meta.outputs.repository }}
           VERSION: ${{ needs.meta.outputs.version }}
         run: |
-          status=$(curl -sS -o /dev/null -w '%{http_code}' -A "$GITHUB_REPOSITORY release workflow" \
+          status=$(curl -sS -o /dev/null -w '%{http_code}' -A "$REPOSITORY release workflow" \
             "https://crates.io/api/v1/crates/$CRATE/$VERSION")
           case "$status" in
             200) echo "::notice::$CRATE $VERSION is already on crates.io; skipping cargo publish" ;;
-            404) cargo publish --locked ;;
+            404) cargo publish --locked -p "$CRATE" ;;
             *) echo "::error::crates.io answered HTTP $status for $CRATE $VERSION"; exit 1 ;;
           esac
 

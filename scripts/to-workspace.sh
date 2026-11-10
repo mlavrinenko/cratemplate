@@ -3,8 +3,10 @@
 # generated single-crate project to turn it into the workspace a project grows
 # into: the crate moves under crates/<name> (its src, tests and package tables),
 # the root keeps the workspace tables and the release profile as a virtual
-# manifest, and a second member with a doctest joins it. The template must gate
-# the result with no edit, so this touches nothing else.
+# manifest, and a second member with a doctest joins it. The second member is
+# `publish = false`, so `cargo metadata` selects the one publishable crate the
+# release ships. The template must gate the result with no edit, so this touches
+# nothing else.
 set -euo pipefail
 
 root=$(cd "${1:?usage: to-workspace.sh <generated-crate>}" && pwd)
@@ -43,6 +45,7 @@ edition = "2024"
 rust-version = "1.85"
 description = "A second workspace member"
 license = "$license"
+publish = false
 
 [lints]
 workspace = true

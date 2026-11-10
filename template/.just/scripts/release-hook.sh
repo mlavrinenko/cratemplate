@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # The `pre-release-hook` of release.toml, which `just release VERSION` runs
-# through cargo-release after the version bump and the CHANGELOG dating, and
-# also in a dry run (DRY_RUN=true), where the tree is still unbumped. It reads
-# NEW_VERSION, DRY_RUN and WORKSPACE_ROOT, which cargo-release sets. Each
-# refusal guards a way a release has gone wrong: it prints one `error:` and its
-# `hint:` lines, and cargo-release aborts before it commits.
+# through cargo-release after the version bump, and also in a dry run
+# (DRY_RUN=true), where the tree is still unbumped. It reads
+# NEW_VERSION, DRY_RUN and WORKSPACE_ROOT, which cargo-release sets, and
+# release-meta.sh for the one publishable crate. Each refusal guards a way a
+# release has gone wrong: it prints one `error:` and its `hint:` lines, and
+# cargo-release aborts before it commits.
 set -euo pipefail
 cd "$WORKSPACE_ROOT"
 version="$NEW_VERSION"
@@ -23,11 +24,11 @@ for tool in git cargo curl gh; do
         || refuse "'$tool' is not on PATH" "run inside the dev shell"
 done
 gh auth status >/dev/null 2>&1 || refuse "gh is not logged in" "gh auth login"
-crate=$(sed -n 's/^name = "\(.*\)"/\1/p' Cargo.toml | head -1)
-repo_url=$(sed -n 's/^repository = "\(.*\)"/\1/p' Cargo.toml | head -1)
+crate=$(.just/scripts/release-meta.sh crate)
+repo_url=$(.just/scripts/release-meta.sh repository)
 workflows=(.github/workflows/release*.yml)
 workflow=$(basename "${workflows[0]}")
-# The bump and the dating are the only edits a real run has made by now.
+# A real run has only the bump (and a hand-dated CHANGELOG) uncommitted by now.
 dirty=$(git status --porcelain | grep -Ev '^.. (Cargo\.toml|Cargo\.lock|CHANGELOG\.md)$' || true)
 [ "$dry_run" != true ] || dirty=$(git status --porcelain)
 [ -z "$dirty" ] \
@@ -60,10 +61,45 @@ case "$status" in
     200) refuse "'$crate $version' is already on crates.io" "a published version is never re-published; bump to the next version" ;;
     *) refuse "crates.io answered HTTP '${status:-nothing}' for '$crate $version'" "retry once crates.io is reachable" ;;
 esac
-# The replacement dates [Unreleased] under the new version; a dry run, or a re-run
-# after the bump, finds the entries under whichever heading holds them.
+# Dating [Unreleased] lives here, not in cargo-release's replacements: a
+# workspace member resolves those against crates/<name>/, which holds no
+# CHANGELOG. The match is the replacement that used to run, so it fires only
+# while entries follow [Unreleased] and a re-run after a red CI dates nothing
+# twice. A dry run, or a re-run after the bump, finds the entries under whichever
+# heading holds them.
 heading="Unreleased"
 grep -Eq "^## \[${version//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md && heading="$version"
+if [ "$dry_run" != true ] && [ "$heading" = Unreleased ]; then
+    dated=$(mktemp)
+    if awk -v version="$version" -v date="$(date -u +%F)" '
+        { line[NR] = $0 }
+        END {
+            for (i = 1; i <= NR; i++) {
+                if (!done && line[i] == "## [Unreleased]") {
+                    j = i + 1
+                    while (j <= NR && line[j] == "") j++
+                    if (j <= NR && line[j] ~ /^### /) {
+                        print "## [Unreleased]"
+                        print ""
+                        print "## [" version "] - " date
+                        for (k = i + 1; k < j; k++) print ""
+                        done = 1
+                        i = j - 1
+                        continue
+                    }
+                }
+                print line[i]
+            }
+            exit(done ? 0 : 1)
+        }
+    ' CHANGELOG.md > "$dated"; then
+        cp "$dated" CHANGELOG.md
+        rm -f "$dated"
+        heading="$version"
+    else
+        rm -f "$dated"
+    fi
+fi
 [ "$dry_run" = true ] || [ "$heading" = "$version" ] \
     || refuse "CHANGELOG.md has no dated section for '$version'" "add the release's entries under '## [Unreleased]' and commit"
 entries=$(sed -n "/^## \[${heading//./\\.}\]/,/^## \[/p" CHANGELOG.md | sed '1d;$d' | sed '/^[[:space:]]*$/d')
@@ -73,5 +109,5 @@ entries=$(sed -n "/^## \[${heading//./\\.}\]/,/^## \[/p" CHANGELOG.md | sed '1d;
 [ "$dry_run" = true ] || outdatty update --group release-notes >/dev/null
 just check || refuse "the gates have not passed on this tree" "fix what just check reports above, then commit"
 # --allow-dirty: on a real run the bump is not committed yet.
-cargo publish --dry-run --locked --allow-dirty --quiet \
+cargo publish --dry-run --locked --allow-dirty -p "$crate" --quiet \
     || refuse "cargo publish --dry-run failed" "fix the packaging error above"
