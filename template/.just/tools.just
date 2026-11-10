@@ -15,3 +15,8 @@ nix-fmt:
 [group("gate")]
 nix-fmt-check:
     find . \( -path ./.git -o -path ./target -o -path ./.direnv \) -prune -o -type f -name '*.nix' -exec nixfmt --check {} +
+
+[doc("Scan the working tree for secrets (on demand, not a gate)")]
+[group("advisory")]
+secrets:
+    gitleaks dir . --redact --no-banner -v

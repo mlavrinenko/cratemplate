@@ -75,6 +75,9 @@
             # `just lint::workflows` and `just lint::shellcheck`.
             actionlint
             shellcheck
+            # `just tools::secrets`: on demand, because a full scan is slow and
+            # the fixtures carry deliberate fakes.
+            gitleaks
             rustc
             cargo
             cargo-llvm-cov
