@@ -3,3 +3,6 @@
 # Scratch space for temporary artifacts (scratch notes, tool output).
 # Never tracked — anything worth keeping goes in docs/.
 var/
+
+# Agent worktrees: parallel sub-agent scratch trees, never part of the repo.
+/.worktrees/

@@ -17,6 +17,7 @@ exclude_dirs:
   - archive
   - template
   - .direnv
+  - .worktrees
 
 overrides:
   - pattern: "./README.md"
