@@ -48,4 +48,7 @@ Both crate kinds share the gates and conventions below.
 `just validate lib` gate both kinds (or `just mmz validate <kind>` to skip a
 re-run when `template/` is unchanged; a plain `just validate` records no pass).
 `just check-docs` holds the linecaps and `just check-tasks` the backlog; see
-[AGENTS.md](AGENTS.md) for the rules. The `description` placeholder rejects quotes, backslashes, CR/LF and other C0 controls and DEL because it lands in TOML and doc comments verbatim.
+[AGENTS.md](AGENTS.md) for the rules. The seam between referenced, generated
+and copied template pieces is decided in
+[docs/decision/reference-not-copy.md](docs/decision/reference-not-copy.md).
+The `description` placeholder rejects quotes, backslashes, CR/LF and other C0 controls and DEL because it lands in TOML and doc comments verbatim.

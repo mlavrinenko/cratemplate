@@ -595,3 +595,7 @@ move — and (b) what's genuinely per-repo prose/structure that has to stay copi
 initial `Cargo.toml` metadata, project-specific Justfile bodies) — for that residual, a
 cruft/copier-style opt-in re-sync tool is the better-precedented answer than inventing a
 projen-for-Rust or a bigger `just-flake`.
+
+**Decision record:** the per-artifact split is fixed in
+[`../decision/reference-not-copy.md`](../decision/reference-not-copy.md). That record, not this
+survey, governs which piece is referenced, generated or copied.
