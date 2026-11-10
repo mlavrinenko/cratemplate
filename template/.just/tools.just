@@ -20,3 +20,10 @@ nix-fmt-check:
 [group("advisory")]
 secrets:
     gitleaks dir . --redact --no-banner -v
+
+[doc("Report workarounds upstream has fixed (needs network)")]
+[group("advisory")]
+[no-exit-message]
+[positional-arguments]
+canibump *ARGS:
+    canibump --manifest .config/canibump.toml "$@"

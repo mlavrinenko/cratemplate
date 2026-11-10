@@ -30,6 +30,8 @@
         # cargo-llvm-cov cannot find llvm-cov/llvm-profdata in the sysroot.
         # Point it at a standalone LLVM of the SAME major as rustc's — a
         # mismatched llvm-profdata rejects the profraw format.
+        # canibump:llvm-tools - drop the two shell exports when cargo-llvm-cov
+        # finds distro LLVM itself.
         llvm = pkgs.llvmPackages_21.llvm;
       in
       {
@@ -40,7 +42,8 @@
         # For `nix build` & `nix run`. naersk cannot build a crate whose
         # manifest takes a git dependency, so `nix build` fails on one; a crate
         # that takes one needs a different builder. The template has none, so
-        # the package keeps naersk. `pname` is set because a virtual workspace
+        # the package keeps naersk. canibump:naersk-git - switch builders when
+        # naersk can. `pname` is set because a virtual workspace
         # has no root `[package]`: naersk then falls back to
         # `rust-workspace-unknown` and `nix run` looks for a binary of that name.
         # It names the binary `nix run` starts, so point it at the right crate's
@@ -62,6 +65,7 @@
           # cache like kache); the dev shell inherits it and it never reaches the
           # `nix build` sandbox. No wrapper pinned here.
           nativeBuildInputs = [
+            qahq.packages.${system}.canibump
             qahq.packages.${system}.cargo-crap
             qahq.packages.${system}.ejectest
             qahq.packages.${system}.jscpd

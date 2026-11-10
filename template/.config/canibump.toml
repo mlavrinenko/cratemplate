@@ -1,0 +1,34 @@
+#:schema https://raw.githubusercontent.com/mlavrinenko/canibump/main/schema/canibump.schema.json
+#
+# Workarounds this template carries, each waiting on its upstream condition.
+# Run `just tools::canibump` (needs network) to see which one can go.
+#
+# canibump resolves `[scan]` globs and declared `sites` relative to this
+# manifest's directory. A manifest in .config/ therefore cannot walk up to
+# flake.nix, so each blocker declares the marker line there as a site.
+
+[settings]
+# Only a landed upstream fix is a finding. A closed-unmerged upstream item is
+# "dead", not a reason to fail an on-demand check.
+fail-on = ["bumpable"]
+
+# nixpkgs builds cargo-generate without its `git` feature, so validate runs
+# `git init`. Nothing upstream tracks that package flag, and the workaround
+# lives in the template authoring repo, not in a generated project, so no
+# marker here could place it. Left out until one of those changes.
+
+[[blocker]]
+id = "naersk-git"
+note = "naersk cannot build a crate with a git dependency; switch packages.default off naersk when it can"
+state = "github:nix-community/naersk#257"
+sites = [
+  { file = "../flake.nix", pattern = "canibump:naersk-git" },
+]
+
+[[blocker]]
+id = "llvm-tools"
+note = "nixpkgs rustc ships no llvm-tools-preview, so the shell exports LLVM_COV/LLVM_PROFDATA; drop the exports when cargo-llvm-cov finds distro LLVM itself"
+state = "github:taiki-e/cargo-llvm-cov#522"
+sites = [
+  { file = "../flake.nix", pattern = "canibump:llvm-tools" },
+]
