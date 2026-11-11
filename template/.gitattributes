@@ -5,3 +5,7 @@ CHANGELOG.md merge=union
 # touch one line. The `outdatty` driver (`just install-hooks` sets it) keeps
 # the target's copy and .just/scripts/wt-lock.sh records the merged tree.
 outdatty.lock merge=outdatty
+# Two lanes that each accept a clone add a key to the same jscpd fingerprints
+# object. The `jscpd` driver (`just install-hooks` sets it) unions the three
+# inputs through jscpd's built-in `--merge-baseline`.
+.config/jscpd-baseline.json merge=jscpd

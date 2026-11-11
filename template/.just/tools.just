@@ -6,6 +6,9 @@ set unstable := true
 set working-directory := '..'
 set script-interpreter := ["bash", "-eo", "pipefail"]
 
+# The same roots `just check-dry` scans.
+import 'roots.just'
+
 [doc("Format every Nix file in place")]
 [group("dev")]
 nix-fmt:
@@ -30,6 +33,11 @@ secrets:
 [group("dev")]
 crap-baseline:
     bash .just/scripts/crap-baseline.sh
+
+[doc("Rewrite the committed jscpd baseline from the current tree")]
+[group("dev")]
+dry-baseline:
+    jscpd --no-tips -k 70 -f rust --ignore-identifiers --ignore-literals --similarity=0.8 --baseline .config/jscpd-baseline.json --update-baseline -r ai {{ rust_roots }}
 
 [doc("Report workarounds upstream has fixed (needs network)")]
 [group("advisory")]

@@ -21,6 +21,11 @@
 # scratch has no Cargo tree, so each lane's rewrite is simulated on a two-entry
 # seed of the committed file. If this ever conflicts, the baseline needs a
 # merge driver before it can be committed.
+#
+# The jscpd baseline is the conflict the `jscpd` merge driver exists for: both
+# lanes add a fingerprint at the same spot in the fingerprints object, and the
+# built-in `--merge-baseline` (registered by `just install-hooks`) unions them.
+# The assertion below checks both survive, which also proves the driver ran.
 set -euo pipefail
 
 root=$(git rev-parse --show-toplevel)
@@ -86,6 +91,7 @@ jq '.entries[0] |= (.file = "src/a.rs" | .function = "alpha" | .line = 1)
     | .entries[1] = (.entries[0] | .file = "src/b.rs" | .function = "beta")' \
     .config/crap-baseline.json >.config/crap-baseline.tmp
 mv .config/crap-baseline.tmp .config/crap-baseline.json
+jq -n '{version: 1, fingerprints: {}}' >.config/jscpd-baseline.json
 git init -q -b main
 step "the first outdatty update" outdatty update
 git add -A
@@ -128,13 +134,16 @@ lane() { # lane <slug> <file>: a lane that adds a CHANGELOG entry
         # Each lane lowers a different function, as a deliberate
         # `just tools::crap-baseline` would after that function improved.
         case "$1" in
-        one) fn=alpha; score=1.0 ;;
-        two) fn=beta; score=3.0 ;;
+        one) fn=alpha; score=1.0; fp=aaaaaaaaaaaaaaaa ;;
+        two) fn=beta; score=3.0; fp=bbbbbbbbbbbbbbbb ;;
         esac
         jq --arg fn "$fn" --argjson score "$score" \
             '(.entries[] | select(.function == $fn) | .crap) = $score' \
             .config/crap-baseline.json >.config/crap-baseline.tmp
         mv .config/crap-baseline.tmp .config/crap-baseline.json
+        jq --arg fp "$fp" '.fingerprints[$fp] = 1' \
+            .config/jscpd-baseline.json >.config/jscpd-baseline.tmp
+        mv .config/jscpd-baseline.tmp .config/jscpd-baseline.json
         step "outdatty update in $1" outdatty update
         git add -A
         git commit -q -m "chore($1): add an entry and re-confirm the lock" -m "Refs: $1"
@@ -160,7 +169,7 @@ for entry in "an entry from one" "an entry from two"; do
         exit 1
     }
 done
-if grep -q '^[<=>]\{7\}' CHANGELOG.md outdatty.lock .config/crap-baseline.json; then
+if grep -q '^[<=>]\{7\}' CHANGELOG.md outdatty.lock .config/crap-baseline.json .config/jscpd-baseline.json; then
     echo "land-repro: a conflict marker reached main" >&2
     exit 1
 fi
@@ -169,6 +178,12 @@ if ! jq -e '([.entries[] | select(.function == "alpha") | .crap] == [1.0])
     and ([.entries[] | select(.function == "beta") | .crap] == [3.0])' \
     .config/crap-baseline.json >/dev/null; then
     echo "land-repro: the merged CRAP baseline lost a lane's entry" >&2
+    exit 1
+fi
+# The driver unioned both lanes' fingerprints; without it the second land
+# conflicts on the same `{}` insertion.
+if ! jq -e '.fingerprints | length == 2' .config/jscpd-baseline.json >/dev/null; then
+    echo "land-repro: the merged jscpd baseline lost a fingerprint" >&2
     exit 1
 fi
 # The lock rides with the work commit, so the commit that only files a task

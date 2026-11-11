@@ -134,6 +134,13 @@ scopes:
   crap-baseline:
     - ".config/crap-baseline.json"
 
+  # The committed jscpd baseline: a changed baseline changes which clones the
+  # gate calls new, and `just tools::dry-baseline` writes it. Literal for the
+  # same reason as `lcov` and `crap-baseline`: it is one input file, not a
+  # scope of sources.
+  jscpd-baseline:
+    - ".config/jscpd-baseline.json"
+
   # The release config, the worktrunk hooks, their scripts and the merge rules in
   # .gitattributes are outdatty `dev-docs` SOURCES (they decide what AGENTS.md
   # and CONTRIBUTING.md say a release refuses and a land runs), so only the
@@ -209,11 +216,12 @@ commands:
     tags: [gate]
     inputs: [rust, file-size-config, docs, gates-meta]
 
-  # jscpd scans `src/` and `tests/` (or `crates/`) for duplicated Rust blocks (>=70 tokens).
-  # The `-k 70` threshold is Justfile-defined, so a Justfile edit re-runs this.
+  # jscpd scans the roots `rust_roots` names (see .just/roots.just) for
+  # duplicated Rust blocks (>=70 tokens). The committed baseline decides which
+  # clones are already accepted; the recipe body lives in the Justfile.
   - name: just check-dry
     tags: [gate]
-    inputs: [rust, gates-meta]
+    inputs: [rust, jscpd-baseline, gates-meta]
 
   # actionlint only reads .github/workflows/, shellcheck only the tracked
   # shebang scripts, and rustdoc reads the crate's docs plus its sources.

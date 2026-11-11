@@ -13,8 +13,8 @@ mod lint '.just/lint.just'
 # On-demand tooling: Nix formatting, secret scans and upstream workaround checks.
 mod tools '.just/tools.just'
 
-# Workspace members live under crates/; a root crate keeps src/ and tests/.
-rust_roots := if path_exists("crates") == "true" { "crates" } else { "src tests" }
+# `rust_roots` is shared by `check-dry` and `tools::dry-baseline`.
+import '.just/roots.just'
 
 # ejectest takes one root: crates/, or src for a root crate.
 eject_root := if path_exists("crates") == "true" { "crates" } else { "src" }
@@ -145,10 +145,10 @@ eject PCT='90':
 check-file-size:
     linecop
 
-[doc("Fail on duplicated Rust blocks of >=70 tokens")]
+[doc("Fail on new duplicated Rust blocks of >=70 tokens")]
 [group("gate")]
 check-dry:
-    jscpd --no-tips -k 70 -f rust --exit-code 1 -r ai {{ rust_roots }}
+    jscpd --no-tips -k 70 -f rust --ignore-identifiers --ignore-literals --similarity=0.8 --baseline .config/jscpd-baseline.json --fail-on-new-clones -r ai {{ rust_roots }}
 
 [doc("Audit advisories, licenses and dependency bans")]
 [group("advisory")]
