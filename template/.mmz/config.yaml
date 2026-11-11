@@ -127,6 +127,13 @@ scopes:
   lcov:
     - "target/coverage/lcov.info"
 
+  # `just crap` also reads the committed ratchet baseline. It is tracked, so a
+  # glob would work; spelled as a literal path like `lcov` because it is one
+  # file the rule reads, not a scope of sources. `just tools::crap-baseline`
+  # writes it, and a changed baseline must re-run the comparison.
+  crap-baseline:
+    - ".config/crap-baseline.json"
+
   # The release config, the worktrunk hooks, their scripts and the merge rules in
   # .gitattributes are outdatty `dev-docs` SOURCES (they decide what AGENTS.md
   # and CONTRIBUTING.md say a release refuses and a land runs), so only the
@@ -247,4 +254,4 @@ commands:
     inputs: [rust, gates-meta]
 
   - name: just crap
-    inputs: [rust, lcov, gates-meta]
+    inputs: [rust, lcov, crap-baseline, gates-meta]

@@ -26,6 +26,11 @@ check-tasks:
 secrets:
     gitleaks dir . --redact --no-banner -v
 
+[doc("Rewrite the committed CRAP ratchet baseline from the current lcov")]
+[group("dev")]
+crap-baseline:
+    bash .just/scripts/crap-baseline.sh
+
 [doc("Report workarounds upstream has fixed (needs network)")]
 [group("advisory")]
 [no-exit-message]

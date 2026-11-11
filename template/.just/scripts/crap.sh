@@ -17,6 +17,13 @@
 # `--format github` is what makes a green run quiet and a red one legible: it
 # emits one `::warning` per function above `--threshold` (naming file, line,
 # function and score) and prints nothing when nothing is wrong.
+#
+# The committed baseline is the ratchet. `--fail-above` still catches a new
+# function over 30, while `--fail-regression` stops an already-scored one from
+# getting worse even while it stays under the absolute floor. The baseline is
+# REQUIRED: a missing file is a hard failure, never a silent fallback to the
+# absolute threshold, because that fallback would forgive every regression.
+# Only `just tools::crap-baseline` writes it, deliberately; this gate never does.
 set -eo pipefail
 
 reason=$(just _lcov-stale-reason)
@@ -25,6 +32,12 @@ if [ -n "$reason" ]; then
     echo "  (a source the lcov never saw scores as 0% covered, not as unknown)" >&2
     exit 1
 fi
+baseline=.config/crap-baseline.json
+if [ ! -f "$baseline" ]; then
+    echo "just crap: $baseline is missing — run \`just tools::crap-baseline\` after \`just cover\`" >&2
+    exit 1
+fi
 cargo crap --lcov target/coverage/lcov.info --workspace \
     --exclude '**/main.rs' --exclude 'tests/**' --exclude '**/*_tests.rs' \
-    --format github --threshold 30 --fail-above
+    --format github --threshold 30 --fail-above \
+    --baseline "$baseline" --fail-regression --sort file
