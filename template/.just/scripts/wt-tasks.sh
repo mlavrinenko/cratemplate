@@ -3,16 +3,16 @@
 # (.config/wt.toml). `mt check --commits` refuses a branch that names a task
 # still `wip` at its tip, so it cannot land without its `mt done` flip.
 #
-# MindTape is optional here: a crate without `.mindtape/` has no tasks to check,
-# and the dev shell does not ship `mt`, so a crate that tracks tasks installs it
-# itself. Either absence is a no-op; the second says so.
+# MindTape is optional here: a crate without `.mindtape/` has no tasks to
+# check, so this is a no-op. A crate that does track tasks must have `mt` on
+# PATH; a missing tool is a broken dev shell, not a reason to skip the check.
 set -euo pipefail
 
 range=${1:?usage: wt-tasks.sh <range>}
 
 [ -d .mindtape ] || exit 0
-if ! command -v mt >/dev/null; then
-    echo "wt-tasks: .mindtape/ exists but mt is not on PATH, so the task check was skipped" >&2
-    exit 0
-fi
+command -v mt >/dev/null || {
+    echo "wt-tasks: .mindtape/ exists but mt is not on PATH" >&2
+    exit 1
+}
 mt check --commits "$range"

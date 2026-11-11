@@ -16,6 +16,11 @@ nix-fmt:
 nix-fmt-check:
     find . \( -path ./.git -o -path ./target -o -path ./.direnv \) -prune -o -type f -name '*.nix' -exec nixfmt --check {} +
 
+[doc("Check task files and that mt fix would change nothing")]
+[group("gate")]
+check-tasks:
+    bash .just/scripts/check-tasks.sh
+
 [doc("Scan the working tree for secrets (on demand, not a gate)")]
 [group("advisory")]
 secrets:

@@ -97,6 +97,13 @@ scopes:
     - "docs/**"
     - "www/**"
 
+  # MindTape's config and task template plus the task sources themselves. A
+  # project generated with `task_tracker = none` has neither path; a glob that
+  # matches nothing is harmless, and the script no-ops without `.mindtape/`.
+  tasks:
+    - ".mindtape/**"
+    - "tasks/**"
+
   # The Typst sources `just docs-md` renders, the committed Markdown they
   # declare as output, and the generator plus helpers that decide the bytes.
   docs-src:
@@ -226,6 +233,12 @@ commands:
   - name: just docs-md-check
     tags: [gate]
     inputs: [docs-src, docs-out, docs-meta, gates-meta]
+
+  # The task gate is a no-op in a `none` project (no `.mindtape/`), so the
+  # rule stays in the gate set for both variants.
+  - name: just tools::check-tasks
+    tags: [gate]
+    inputs: [tasks, gates-meta]
 
   # Untagged from here down: these run outside `just check` (CI runs them in
   # their own job), so they stay out of the gate set. Memoized only so a no-op

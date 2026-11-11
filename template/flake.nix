@@ -78,6 +78,9 @@
             qahq.packages.${system}.mmz
             qahq.packages.${system}.outdatty
           ]
+          # cargo-generate renders the tracker choice into the condition, so
+          # `none` leaves `mt` out of the shell without a second flake input.
+          ++ pkgs.lib.optional ("{{ task_tracker }}" == "mindtape") qahq.packages.${system}.mindtape
           ++ (with pkgs; [
             # `just lint::workflows` and `just lint::shellcheck`.
             actionlint
