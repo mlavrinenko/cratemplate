@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# .just/scripts/land-repro.sh: two lanes that both add a CHANGELOG entry and
-# re-confirm outdatty.lock land one after the other with no conflict, the
-# second ending on a commit that only files a task.
+# .just/scripts/land-repro.sh: two lanes that both add a CHANGELOG entry,
+# re-confirm outdatty.lock and change a different entry in the committed CRAP
+# baseline land one after the other with no conflict, the second ending on a
+# commit that only files a task.
 #
 # Builds a scratch repo under /tmp (never this one) that carries this repo's
 # land machinery as it stands in the working tree: the Justfile, .config/,
@@ -12,6 +13,14 @@
 # The scratch gate is `outdatty check` alone: the heavy gates read crates this
 # scratch does not have, and a merge touches none of them. A stub `direnv`
 # runs its command in the caller's PATH, which already holds the dev shell.
+#
+# The CRAP baseline is the other merge shape under test. Its committed format
+# is `--sort file`, so each entry stays in place and two lanes that lower
+# different functions edit different regions; cargo-crap's JSON is
+# pretty-printed, which is what lets git merge those regions cleanly. The
+# scratch has no Cargo tree, so each lane's rewrite is simulated on a two-entry
+# seed of the committed file. If this ever conflicts, the baseline needs a
+# merge driver before it can be committed.
 set -euo pipefail
 
 root=$(git rev-parse --show-toplevel)
@@ -72,6 +81,11 @@ groups:
     source: ["src/b.txt"]
     dependents: ["docs/c.md"]
 EOF
+# Two entries, the shape `cargo crap --sort file` writes: one per lane.
+jq '.entries[0] |= (.file = "src/a.rs" | .function = "alpha" | .line = 1)
+    | .entries[1] = (.entries[0] | .file = "src/b.rs" | .function = "beta")' \
+    .config/crap-baseline.json >.config/crap-baseline.tmp
+mv .config/crap-baseline.tmp .config/crap-baseline.json
 git init -q -b main
 step "the first outdatty update" outdatty update
 git add -A
@@ -111,6 +125,16 @@ lane() { # lane <slug> <file>: a lane that adds a CHANGELOG entry
         cd "$(lane_dir "$1")"
         printf 'edited by %s\n' "$1" >>"$2"
         sed -i "/^- the first entry/a - an entry from $1" CHANGELOG.md
+        # Each lane lowers a different function, as a deliberate
+        # `just tools::crap-baseline` would after that function improved.
+        case "$1" in
+        one) fn=alpha; score=1.0 ;;
+        two) fn=beta; score=3.0 ;;
+        esac
+        jq --arg fn "$fn" --argjson score "$score" \
+            '(.entries[] | select(.function == $fn) | .crap) = $score' \
+            .config/crap-baseline.json >.config/crap-baseline.tmp
+        mv .config/crap-baseline.tmp .config/crap-baseline.json
         step "outdatty update in $1" outdatty update
         git add -A
         git commit -q -m "chore($1): add an entry and re-confirm the lock" -m "Refs: $1"
@@ -136,8 +160,15 @@ for entry in "an entry from one" "an entry from two"; do
         exit 1
     }
 done
-if grep -q '^[<=>]\{7\}' CHANGELOG.md outdatty.lock; then
+if grep -q '^[<=>]\{7\}' CHANGELOG.md outdatty.lock .config/crap-baseline.json; then
     echo "land-repro: a conflict marker reached main" >&2
+    exit 1
+fi
+# Neither lane's CRAP entry was lost or overwritten by the other.
+if ! jq -e '([.entries[] | select(.function == "alpha") | .crap] == [1.0])
+    and ([.entries[] | select(.function == "beta") | .crap] == [3.0])' \
+    .config/crap-baseline.json >/dev/null; then
+    echo "land-repro: the merged CRAP baseline lost a lane's entry" >&2
     exit 1
 fi
 # The lock rides with the work commit, so the commit that only files a task
