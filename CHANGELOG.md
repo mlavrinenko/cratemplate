@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The template ships the renovation gates.** Generated projects now format
+  every `*.nix` with `nixfmt`, scan the tree for secrets on demand, track
+  upstream workarounds with canibump, check the crate on Windows MSVC in CI,
+  and can opt into MindTape at generation. `just check` runs a fast batch and
+  then a build batch, each in parallel, printing one verdict on green and only
+  the failed arms' logs on red; `just check cover` adds the coverage pair.
+- **CRAP and jscpd ratchet against committed baselines.** `cargo-crap`'s native
+  `--baseline`/`--fail-regression` and `jscpd`'s `--baseline`/`--fail-on-new-clones`
+  gate new findings; `just tools::crap-baseline` and `just tools::dry-baseline`
+  are the only writers, and a missing baseline fails the gate.
+- **The reference-not-copy decision** records which template pieces are
+  versioned flake inputs, generated files and copied bodies, and the schema
+  convention keeps every future crate config generated and drift-tested.
+
 ### Changed
 
 - **The template's tool set moves to qahq `58f9ec9`.** Generated projects

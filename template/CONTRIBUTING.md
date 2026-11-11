@@ -39,34 +39,40 @@ Rust files: 500 lines. Markdown: 200. Split a file into modules or separate docu
 
 ## Coverage and CRAP
 
-`just cover` enforces a 70% workspace line total plus 60% on each production file with at least 5 uncovered lines; `tests/` and `*_tests.rs` are exempt. A green run prints only the report header and TOTAL. `just crap` scores the lcov `just cover` wrote with `cargo crap --format github` at a threshold of 30: it prints nothing when green, refuses a stale lcov, and excludes `**/main.rs`, `tests/` and `*_tests.rs`. Neither gate is in `just check`; CI runs them. Fix a finding with tests or less branching — never a lower threshold.
+`just cover` enforces a 70% workspace line total plus 60% on each production file with at least 5 uncovered lines; `tests/` and `*_tests.rs` are exempt. A green run prints only the report header and TOTAL. `just crap` scores the lcov `just cover` wrote with `cargo crap --format github` at a threshold of 30: it prints nothing when green, refuses a stale lcov, and excludes `**/main.rs`, `tests/` and `*_tests.rs`. It also reads the committed [.config/crap-baseline.json](.config/crap-baseline.json): a function may rise back to its recorded score but not past it. Only `just tools::crap-baseline` tightens the ratchet, a missing baseline fails the gate, and `just land-repro` proves the file merges across lanes. Neither gate is in the default `just check`; CI runs them, and `just check cover` runs them on demand. Fix a finding with tests or less branching, never a lower threshold.
 
 ## Memoized gates
 
 Every arm of `just check` is `just mmz <subgate>`; rules, scopes and the `gate` tag live in [.mmz/config.yaml](.mmz/config.yaml). A new or renamed gate needs its rule there — an unmatched invocation is a hard error, not a silent skip. `just status` prints freshness, there is no `--force`, and the pre-commit hook asserts `mmz --is-fresh --tag gate`.
+
+`just check` runs the fast batch first and the build batch only when it is green; every arm in a batch runs in parallel through `mmz`. A green run prints one verdict, and a red run prints only the failed arms’ logs. `just check
+cover` adds the opt-in coverage pair.
 
 ## Static lint gates
 
 - `just lint::workflows` runs actionlint over `.github/workflows/*.yml`.
 - `just lint::shellcheck` runs shellcheck at warning severity over every tracked script with a bash or sh shebang; the hooks are inline shell, so they are covered too.
 - `just lint::doc` runs rustdoc with `RUSTDOCFLAGS="-D warnings"`, private items included.
+- `just tools::nix-fmt-check` gates every `*.nix`; `just fmt` rewrites them with the same `nixfmt`, and `nix fmt` uses the flake formatter.
 - `just docs-md-check` fails when a generated document is stale; see [Generated docs](#generated-docs).
 
-All four are arms of `just check`.
+All five are arms of `just check`.
 
 ## Copy-paste gate
 
-`just check-dry` fails on any duplicated Rust block of 70 tokens or more. Extract a shared helper instead of shuffling tokens; the recipe header in the [Justfile](Justfile) has the scope.
+`just check-dry` fails only on a Rust clone absent from [.config/jscpd-baseline.json](.config/jscpd-baseline.json) `just tools::dry-baseline` rewrites it deliberately. Extract a shared helper instead of shuffling tokens; a library without `tests/` is scanned as just `src`.
 
 ## Dependency audits
 
 `just deny` checks advisories, licenses and bans; it needs network and is not in `just check` (CI runs it in its own job). The policy is [deny.toml](deny.toml) — widen it deliberately, never to silence a finding. `just outdated` is a dev aid, never a gate.
 
+`just tools::secrets` scans the working tree for secrets; CI runs it in its own `secrets` job, and it is not in `just check`. `just tools::canibump` reports the workarounds upstream has fixed; it needs network and stays out of `just check` too.
+
 Dependabot owns Cargo (one grouped PR) and GitHub Actions, both monthly. Renovate owns only the Nix flake inputs; [renovate.json](renovate.json) is inert until the Renovate GitHub App is installed.
 
 ## MSRV
 
-`rust-version` in `Cargo.toml` is the minimum supported Rust; CI compiles it in a separate job.
+`rust-version` in `Cargo.toml` is the minimum supported Rust; CI compiles it in a separate job. CI also compiles and tests the crate on Windows MSVC; the release matrix still builds the shipped binaries.
 
 ## Mutation testing
 
@@ -80,11 +86,17 @@ The tracked [.githooks/pre-commit](.githooks/pre-commit) first refuses a path th
 
 The README, AGENTS.md and CONTRIBUTING.md are generated from `docs/src/*.typ`. Never hand-edit them: edit the source, run `just docs-md`, and commit the rendered Markdown. `just docs-md-check` fails on any drift and runs in `just check`.
 
+## Tasks
+
+Task tracking is optional. Generate with `task_tracker = mindtape` to ship `.mindtape/` and `tasks/`, put `mt` in the dev shell, and add `just tools::check-tasks` to `just check`; the default `none` has neither and the arm no-ops.
+
 ## Releasing
 
 `just release X.Y.Z --dry-run` first, then without the flag. Keep entries under `[Unreleased]`; [cargo-release](https://github.com/crate-ci/cargo-release) (`release.toml`) bumps `Cargo.toml`, dates them and commits. Never `cargo publish` by hand and never edit the version or the CHANGELOG date yourself.
 
 The recipe pushes `main`, waits for `ci.yml` on that commit and tags only a green run; the tag push is the only publish path. A failed release is re-run on the same tag with `gh workflow run <workflow> -f tag=vX.Y.Z`; a pushed tag never moves.
+
+In a workspace, `just release` selects the one publishable crate with `cargo metadata`; every support member sets `publish = false`.
 
 First release only: crates.io attaches a Trusted Publisher only to an existing crate, so store a scoped `CARGO_REGISTRY_TOKEN` secret for that tag, then add the publisher and delete the secret.
 
