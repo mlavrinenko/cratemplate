@@ -5,7 +5,7 @@
   difficulty: 6,
   estimate: (files: 15),
   kind: "umbrella",
-  status: wip(2026, 11, 11),
+  status: done(2026, 11, 11),
   tags: ("tooling", "gating"),
 )
 

@@ -4,7 +4,7 @@
   priority: framework("ice", confidence: 0.85, ease: 5.0, impact: 6.0),
   difficulty: 3,
   estimate: (files: 6),
-  status: accepted(2026, 11, 11),
+  status: done(2026, 11, 11),
   tags: ("template", "gating", "tooling"),
   links: parent("land-the-corrected-renovation-backlog.typ"),
 )
