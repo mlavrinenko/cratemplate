@@ -1,9 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mlavrinenko/linecop/v0.7.0/linecop-schema.json
+#
+# linecop — language-aware file size limits.
+#
+# Hidden directories are scanned so `.just/scripts/*.sh` and `.githooks/*`
+# are measured too. The overrides anchor to this directory (`./`), so they
+# match the same files no matter where linecop is invoked from.
 limits:
   Rust: 500
   Markdown: 200
+  BASH: 200
+  Shell: 200
+  Just: 210
+  Typst: 250
 
 count_mode: total
+
+include_hidden: true
 
 exclude_dirs:
   - target
   - archive
+  - var
+  - .direnv
+
+overrides:
+  # Release notes grow without bound; the generated AGENTS.md is capped so it
+  # stays lean on the always-loaded path. Typst sources use the base limit.
+  - pattern: "**/CHANGELOG.md"
+    exclude: true
+  - pattern: "./AGENTS.md"
+    limit: 45
+    max_bytes: 6000
+  - pattern: "./CONTRIBUTING.md"
+    limit: 130
+    max_bytes: 9000
+  - pattern: "./README.md"
+    limit: 60
+    max_bytes: 4000
+  - pattern: "./Justfile"
+    limit: 210
+    max_bytes: 9000

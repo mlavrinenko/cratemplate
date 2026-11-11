@@ -1,211 +1,203 @@
-set quiet := true
+set quiet
 
-# Shell for every non-shebang recipe line. `-e` aborts the line at its first
-# failing command, `-o pipefail` makes a failure anywhere in a pipeline count
-# (neither holds in just's default `sh -cu`), so recipes need no per-recipe
-# `set -eo pipefail` preamble. No `-u`: recipe bodies interpolate `{{ }}`
-# values and read optional env overrides, where an unset name should expand
-# empty, not abort. Note that just runs each recipe LINE in a fresh shell —
-# a recipe needing one shell across several lines (a variable read back
-# later, a `trap`) still carries its own `#!/usr/bin/env bash` shebang, and
-# `set shell` does not apply to those.
+# `-e`/pipefail per line; no `-u`, so interpolations and optional env vars may expand empty (shebang bodies still set their own).
 set shell := ["bash", "-eo", "pipefail", "-c"]
+set ignore-comments
 
-# Keep `#` lines inside a plain recipe in the justfile instead of handing each
-# one to its own throwaway shell. Shebang recipe bodies are untouched.
-set ignore-comments := true
+# Enables just --fmt / --fmt --check.
+set unstable
 
-# List available recipes
+# Static gates: actionlint, shellcheck and rustdoc warnings.
+mod lint '.just/lint.just'
+
+# On-demand tooling: Nix formatting, secret scans and upstream workaround checks.
+mod tools '.just/tools.just'
+
+# `rust_roots` is shared by `check-dry` and `tools::dry-baseline`.
+import '.just/roots.just'
+
+# ejectest takes one root: crates/, or src for a root crate.
+eject_root := if path_exists("crates") == "true" { "crates" } else { "src" }
+
+# Anchor main.rs at every src/, and keep a relocated CARGO_HOME out of coverage.
+cover_ignore := '(^|/)src/main\.rs|/registry/src/'
+
+[doc("List available recipes")]
+[group("workflow")]
 default:
     @just --list
 
-# clippy-fix before fmt: a clippy autofix can land unformatted, so format after
-# it, and the `check` that follows (which re-runs fmt-check) stays green.
-# Run fixes, then other checks
+[doc("Run fixes, then the full gate")]
+[group("workflow")]
 fix-check: eject clippy-fix fmt check
 
-# Run all checks in parallel (fmt + clippy + tests + unused deps + file size +
-# drift + copy-paste). Each arm is `just mmz <subgate>` — mmz wraps it, so a
-# no-op `just check` re-run skips every arm whose declared inputs are unchanged,
-# and `mmz --is-fresh --tag gate` asserts they all passed without running any.
-# Per-rule scopes and the `gate` tag live in .mmz/config.yaml.
-[parallel]
-check: (mmz "fmt-check") (mmz "clippy") (mmz "test") (mmz "machete") (mmz "check-file-size") (mmz "check-dry") (mmz "outdatty-check")
+[doc("Run every gate, each memoized by mmz")]
+[group("workflow")]
+check STAGE='':
+    bash .just/scripts/check.sh "{{ STAGE }}"
 
-# Wrap a just recipe in mmz: `just mmz fmt-check` runs `mmz just fmt-check`. The
-# double hop makes mmz the cache identity (rule name `just <recipe>` in
-# .mmz/config.yaml), uniform across every sub-gate of `just check`. `just test
-# <filter>` (a developer query, no `mmz`) bypasses this recipe and stays plain
-# `cargo test` with ARGS — and the `just test` rule is `match: exact`, so even a
-# stray `just mmz test <filter>` cannot record the full-suite identity off a
-# filtered subset.
+[doc("Run a recipe through mmz memoization")]
+[group("workflow")]
+[no-exit-message]
 mmz *ARGS:
     mmz just {{ ARGS }}
 
-# Show each memoized rule's freshness — i.e. which arms of `just check` would
-# actually re-run, and whether the pre-commit hook's `mmz --is-fresh --tag
-# gate` would pass right now. Reads mmz's records; runs no gate.
+[doc("Show each memoized rule's freshness")]
+[group("workflow")]
 status:
     mmz --status
 
-# Fail if a source changed without its dependents being re-confirmed
-outdatty-check:
-    outdatty check --format quiet
+[doc("Render docs/src/*.typ to the Markdown each source declares")]
+[group("docs")]
+docs-md:
+    bash docs/generate-md.sh
 
-# Re-confirm dependency groups: record current hashes into outdatty.lock
+[doc("Fail when generated Markdown is stale")]
+[group("docs")]
+docs-md-check:
+    bash docs/generate-md.sh --check
+
+[doc("Fail if a source changed without its dependents re-confirmed")]
+[group("gate")]
+outdatty-check:
+    bash .just/scripts/outdatty-check.sh
+
+[doc("Re-confirm dependency groups and refresh the lock")]
+[group("dev")]
 outdatty-update:
     outdatty update
 
-# Run tests only
+[doc("Run the test suite and doctests")]
+[group("gate")]
+[positional-arguments]
 test *ARGS:
-    cargo test --workspace {{ ARGS }}
+    bash .just/scripts/test.sh "$@"
 
-# Run tests through cargo-nextest: one process per test, so a panicking or
-# hanging test is isolated and the output is far easier to read. A dev aid, not
-# a gate — `just test` and `just cover` stay on `cargo test`, which runs
-# doctests (nextest does not) and is what cargo-llvm-cov instruments here.
-nextest *ARGS:
-    cargo nextest run --workspace {{ ARGS }}
-
-# Run clippy only
+[doc("Run clippy only")]
+[group("gate")]
 clippy:
     cargo clippy --workspace --all-targets -q -- -D warnings
 
-# Auto-fix clippy warnings (allow-dirty/-staged: fix-check runs pre-commit, tree is dirty).
+[doc("Auto-fix clippy warnings")]
+[group("dev")]
 clippy-fix:
     cargo clippy --fix --workspace --all-targets --allow-dirty --allow-staged -- -D warnings
 
-# Build the project
-build *args:
-    cargo build --workspace -q {{ args }}
+[doc("Build the project")]
+[group("dev")]
+[positional-arguments]
+build *ARGS:
+    cargo build --workspace -q "$@"
 
-# Paths kept out of the coverage report, shared by both report passes below.
-# main.rs is excluded — keep it thin; `just crap` excludes it too. The
-# /registry/src/ ignore keeps local and CI reporting the same set when
-# CARGO_HOME is relocated. A file-scope variable, not a shell one: `cover` has
-# no shebang, so each of its lines runs in a fresh shell.
-cover_ignore := 'src/main\.rs|/registry/src/'
-
-# Run coverage with cargo-llvm-cov. llvm-cov, unlike tarpaulin, merges the
-# profraw of child processes, so subprocess-based CLI e2e tests actually
-# attribute to the code they exercise. Instrument once (--no-report), then
-# render both reports from that profdata.
+[doc("Run coverage with cargo-llvm-cov")]
+[group("gate")]
 cover:
-    mkdir -p target/coverage
-    cargo llvm-cov --workspace --no-report
-    cargo llvm-cov report --ignore-filename-regex '{{ cover_ignore }}' \
-        --lcov --output-path target/coverage/lcov.info
-    cargo llvm-cov report --ignore-filename-regex '{{ cover_ignore }}' --fail-under-lines 70
+    bash .just/scripts/cover.sh '{{ cover_ignore }}'
 
-# Gate complex, undertested functions via CRAP metric. Needs lcov from `just
-# cover` first. Threshold 30 is a sane greenfield default; tune per repo.
-# `--exclude main.rs` is harmless for libs (where the file doesn't exist).
+[doc("Gate complex, undertested functions via CRAP")]
+[group("gate")]
 crap:
-    cargo crap --lcov target/coverage/lcov.info --workspace --exclude 'src/main.rs' --threshold 30 --fail-above
+    bash .just/scripts/crap.sh
 
-# Format code
+[doc("Report why the coverage lcov is unusable; empty means usable")]
+[group("gate")]
+_lcov-stale-reason:
+    bash .just/scripts/lcov-stale-reason.sh {{ rust_roots }}
+
+[doc("Format code and the Justfile")]
+[group("dev")]
 fmt:
     cargo fmt --all
+    just --fmt
+    just tools::nix-fmt
+    typstyle --inplace docs
 
-# Format check (CI-friendly)
+[doc("Check formatting without writing changes")]
+[group("gate")]
 fmt-check:
     cargo fmt --all -- --check
+    just --fmt --check
+    typstyle --check docs
 
-# Check for unused dependencies
+[doc("Check for unused dependencies (prints only on failure)")]
+[group("gate")]
 machete:
-    cargo machete
+    out=$(cargo machete 2>&1) || { printf '%s\n' "$out"; exit 1; }
 
-# Count tests across workspace. Under the global pipefail shell a suite that
-# fails to build or run takes the recipe down with it — a count scraped from a
-# broken run is not worth reporting.
+[doc("Count tests across the workspace")]
+[group("advisory")]
 count-tests:
-    cargo test --workspace 2>&1 | grep "test result:" | awk '{sum += $4} END {print sum " tests"}'
+    cargo nextest list --workspace --message-format json \
+        | jq -r '[.["rust-suites"][].testcases[] | select(.ignored == false)] | "\(length) tests"'
 
-# Show top 20 files by line count. `awk NR<=20` and not `head -20`: head exits
-# after its 20th line, which SIGPIPEs sort once the listing outgrows the pipe
-# buffer, and pipefail would report that 141 as a recipe failure.
+[doc("Show the top 20 files by line count")]
+[group("advisory")]
 file-sizes:
     find . -type f \( -name '*.rs' -o -name '*.md' \) ! -path './target/*' -exec wc -l {} + | sort -rn | awk 'NR <= 20'
 
-# Eject inline tests from Rust files nearing the linecop limit, so they stay
-# under it without losing the inline-test workflow. Runs as part of `fix-check`.
+[doc("Eject inline tests from Rust files nearing the linecop cap")]
+[group("dev")]
 eject PCT='90':
-    linecop --baseline {{ PCT }} --format paths | ejectest apply src --files-from - --lenient
+    bash .just/scripts/eject.sh {{ PCT }} {{ eject_root }}
 
-# Check for oversized files (fails if any exceed limits)
+[doc("Fail on oversized files")]
+[group("gate")]
 check-file-size:
     linecop
 
-# Copy-paste gate: fail on any duplicated Rust block across the crate.
+[doc("Fail on new duplicated Rust blocks of >=70 tokens")]
+[group("gate")]
 check-dry:
-    # jscpd (the Rust port, packaged via qahq in flake.nix) fails on any
-    # duplicated block of >=70 tokens, naming both spans. Fix a finding by
-    # extracting a shared helper — never by shuffling tokens until the
-    # detector loses the scent.
-    #
-    # `--exit-code 1` is spelled with its value: bare `--exit-code` would
-    # swallow the following path argument as its optional code.
-    jscpd --no-tips -k 70 -f rust --exit-code 1 src tests
+    jscpd --no-tips -k 70 -f rust --ignore-identifiers --ignore-literals --similarity=0.8 --baseline .config/jscpd-baseline.json --fail-on-new-clones -r ai {{ rust_roots }}
 
-# Dependency audit: advisories, license policy, and dependency bans. Kept out
-# of `just check` on purpose — it fetches the advisory database, so it needs
-# network and has no business blocking an offline commit. CI runs it in its own
-# job, and `just validate` (in the template repo) runs it against a freshly
-# generated project, so deny.toml can't silently rot out of schema.
+[doc("Audit advisories, licenses and dependency bans")]
+[group("advisory")]
 deny:
-    cargo deny check advisories licenses bans
+    cargo deny -L error check --hide-inclusion-graph advisories licenses bans
 
-# List dependencies with newer versions available. Needs network, and is a dev
-# aid rather than a gate: an upstream release is not a reason for CI to go red.
-# Unrelated to `just outdatty-check`, which is about doc drift inside this repo,
-# not dependency versions.
+[doc("List dependencies with newer upstream versions")]
+[group("advisory")]
 outdated:
     cargo outdated --workspace
 
-# Point git at the tracked pre-commit hook (`.githooks/pre-commit` asserts
-# `mmz --is-fresh --tag gate` against the worktree, running nothing of its
-# own). The dev shell runs this recipe from shellHook on entry, so a fresh
-# clone's first `nix develop` wires the hook and edits to the tracked file
-# take effect live (no copy to refresh). Bypass a single commit with
-# `git commit --no-verify`.
+[doc("Fork a sibling worktree on a new branch")]
+[group("delegation")]
+[positional-arguments]
+fork SLUG *ARGS:
+    wt switch --create --yes "$@"
+
+[doc("Gate, fast-forward the branch onto main and remove its worktree")]
+[group("delegation")]
+[positional-arguments]
+land *ARGS:
+    wt merge --no-squash --no-commit --yes "$@"
+
+[doc("Replay two parallel landing lanes in a scratch repo")]
+[group("delegation")]
+land-repro:
+    bash .just/scripts/land-repro.sh
+
+[doc("Point git at the tracked hooks and merge drivers")]
+[group("dev")]
 install-hooks:
-    git config core.hooksPath .githooks
-    rm -f .git/hooks/pre-commit
-    chmod +x .githooks/pre-commit
-    echo "installed .githooks"
+    bash .just/scripts/install-hooks.sh
 
-# Tag a release and push (usage: just release 0.1.0)
-release VERSION:
-    #!/usr/bin/env bash
-    set -eo pipefail
-    cargo_version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
-    if [ "{{ VERSION }}" != "$cargo_version" ]; then
-        echo "error: requested v{{ VERSION }} but Cargo.toml is $cargo_version; bump Cargo.toml first" >&2
-        exit 1
-    fi
-    mmz --is-fresh --tag gate
-    git tag -a "v{{ VERSION }}" -m "v{{ VERSION }}"
-    git push origin "v{{ VERSION }}"
+[arg('VERSION', pattern='\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?')]
+[arg('DRY_RUN', long='dry-run', value='true')]
+[doc("Push main, wait for its CI, then tag and push the tag")]
+[group("release")]
+[no-exit-message]
+release VERSION $DRY_RUN='':
+    DRY_RUN="{{ DRY_RUN }}" bash .just/scripts/release.sh {{ VERSION }}
 
-# Pre-PR mutation check — the daily driver. Sweeps only mutants touched by
-# this branch's diff against main, so it needs no state file and covers new
-# files for free (every line of a new file is "touched"). A surviving MISSED
-# mutant is a real assertion gap: a line covered but not pinned.
-#
-# Parallelism defaults to 3 and is overridden from the environment
-# (`CARGO_MUTANTS_JOBS=8 just mutants-diff`). The default is resolved by just's
-# `env()` rather than a shell `export`, so it is attached to the one command
-# that reads it instead of living in the recipe's whole shell.
+[doc("Sweep mutants touched by this branch's diff")]
+[group("advisory")]
+[positional-arguments]
 mutants-diff *ARGS:
-    #!/usr/bin/env bash
-    set -eo pipefail
-    diff_file=$(mktemp)
-    trap 'rm -f "$diff_file"' EXIT
-    git diff "$(git merge-base main HEAD)" > "$diff_file"
-    CARGO_MUTANTS_JOBS='{{ env("CARGO_MUTANTS_JOBS", "3") }}' \
-        cargo mutants --in-diff "$diff_file" {{ ARGS }}
+    bash .just/scripts/mutants-diff.sh "$@"
 
-# Full-file mutation sweep — a dev aid, never a gate. Extra args pass through
-# to cargo-mutants. File set and excludes come from .cargo/mutants.toml.
+[doc("Run a full-file mutation sweep")]
+[group("advisory")]
+[positional-arguments]
 mutants *ARGS:
-    cargo mutants {{ ARGS }}
+    cargo mutants "$@"

@@ -1,5 +1,9 @@
+test_tool = "nextest"
+test_workspace = true
+profile = "mutants"
+
 {% if crate_kind == "bin" -%}
-exclude = ["src/main.rs"]
+exclude_globs = ["**/src/main.rs"]
 {% else -%}
-exclude = []
+exclude_globs = []
 {% endif -%}

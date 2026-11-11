@@ -1,0 +1,102 @@
+# .mindtape/config.toml — optional task tracking in a generated project.
+
+[tasks]
+
+[[tasks.roots]]
+path = "tasks"
+name = "ct"
+derive-tags = true
+
+[[tasks.status]]
+value = "proposed"
+glyph = "💡"
+color = "blue"
+to = ["accepted", "wip", "cancelled"]
+
+[[tasks.status]]
+value = "accepted"
+glyph = "📋"
+color = "cyan"
+to = ["wip", "cancelled"]
+
+[[tasks.status]]
+value = "wip"
+glyph = "🔨"
+color = "yellow"
+to = ["done", "failed", "accepted"]
+
+[[tasks.status]]
+value = "done"
+glyph = "✅"
+color = "green"
+terminal = true
+to = ["wip", "cancelled", "failed"]
+
+[[tasks.status]]
+value = "cancelled"
+glyph = "🚫"
+color = "magenta"
+terminal = true
+
+[[tasks.status]]
+value = "failed"
+glyph = "❌"
+color = "red"
+terminal = true
+to = ["wip"]
+
+[tasks.priority]
+kind = "int"
+min = 0
+max = 9
+required = "!terminal"
+framework = "ice"
+allow-manual = false
+
+[[tasks.priority.bands]]
+label = "low"
+min = 0
+max = 2
+glyph = "🟢"
+color = "green"
+
+[[tasks.priority.bands]]
+label = "normal"
+min = 3
+max = 6
+glyph = "🟡"
+color = "yellow"
+
+[[tasks.priority.bands]]
+label = "high"
+min = 7
+max = 9
+glyph = "🔴"
+color = "red"
+
+[tasks.difficulty]
+required = "!terminal"
+example = 2
+
+[tasks.estimate]
+units = ["files"]
+required = "!terminal"
+example = { files = 1 }
+
+[[tasks.rules]]
+name = "estimate-in-range"
+when = "!terminal && has(estimate.files)"
+assert = "estimate.files >= 1 && estimate.files <= 15"
+message = "estimate 1 to 15 files; split a bigger task"
+severity = "error"
+
+[[tasks.body.headers.rules]]
+path = ["Summary"]
+action = "unique"
+message = "every task must have exactly one Summary section"
+
+[[tasks.body.headers.rules]]
+action = "order"
+before = ["Summary"]
+after = ["Scope"]
+message = "Summary must precede Scope"

@@ -4,15 +4,37 @@
 # editing a source, review the dependents and run `just outdatty-update` to
 # record the new state; `just outdatty-check` (part of `just check`) fails until
 # you do. Tune these groups to match where your project's coupled files live.
+
+# Files that must always belong to a group. outdatty defaults to requiring
+# EVERY tracked file, which rejects this scaffold's configs, CI, licenses and
+# lockfiles that carry no cross-file coupling. List only what is hand-coupled:
+# a new source module, doc, or manifest that needs a group of its own also
+# belongs here — the `[untracked]` failure message does not say so.
+#
+# Paths come in two spellings, the crate at the root (`src/`) and a workspace
+# member (`crates/*/src/`), because the same file serves both and moving a crate
+# under `crates/` must need no edit. A literal path that is missing logs a
+# warning on every run, so the one-file sources use a brace glob instead.
+require_tracked:
+  - "{src,crates/*/src}/**"
+  - "www/**"
+  - "docs/**"
+  - "README.md"
+  - "CHANGELOG.md"
+  - "CONTRIBUTING.md"
+  - "AGENTS.md"
+  - "{Cargo.toml,crates/*/Cargo.toml}"
+  - "Justfile"
+  - "flake.nix"
 groups:
   # The public surface (CLI for a bin, the library API for a lib) is
-  # documented by hand. Touching the code flags the user-facing docs as
+  # documented for users. Touching the code flags the user-facing docs as
   # needing a look. src/main.rs only exists for crate_kind == "bin".
   - name: {% if crate_kind == "bin" %}cli-docs{% else %}api-docs{% endif %}
     source:
-      - src/lib.rs
+      - "{src,crates/*/src}/lib.rs"
 {%- if crate_kind == "bin" %}
-      - src/main.rs
+      - "{src,crates/*/src}/main.rs"
 {%- endif %}
     dependents:
       - README.md
@@ -22,18 +44,37 @@ groups:
   # changelog.
   - name: release-notes
     source:
-      - Cargo.toml
+      - "{Cargo.toml,crates/*/Cargo.toml}"
     dependents:
       - CHANGELOG.md
 
+  # The committed Markdown is rendered from docs/src/**; a source edit means the
+  # generated output needs re-rendering and re-confirmation.
+  - name: generated-docs
+    source:
+      - "docs/src/**"
+    dependents:
+      - README.md
+      - AGENTS.md
+      - CONTRIBUTING.md
+
   # The dev tooling and conventions documented for contributors track the
-  # files that define them: the dev shell, the recipes, and the gate
-  # memoization rules that decide when a recipe re-runs.
+  # files that define them: the dev shell, the recipes, the test runner's own
+  # profile, and the gate memoization rules that decide when a recipe re-runs.
+  # `.config/nextest.toml` is a recipe body in practice — `status-level` lives
+  # there once, for `just test` and `just cover` — so an edit to it changes the
+  # docs sources, which the generated-docs group then re-confirms.
   - name: dev-docs
     source:
       - flake.nix
       - Justfile
+      - ".just/*.just"
+      - release.toml
+      - ".just/scripts/**"
+      - docs/generate-md.sh
+      - .gitattributes
+      - .config/wt.toml
+      - .config/nextest.toml
       - .mmz/config.yaml
     dependents:
-      - CONTRIBUTING.md
-      - AGENTS.md
+      - "docs/src/**"

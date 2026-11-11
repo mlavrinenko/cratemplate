@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/minikin/cargo-crap/main/schemas/report-v1.json",
+  "version": "0.3.1",
+  "entries": [
+    {
+      "file": "src/lib.rs",
+      "function": "greet",
+      "line": 16,
+      "cyclomatic": 2.0,
+      "coverage": 100.0,
+      "crap": 2.0,
+      "crate": "sample-bin"
+    }
+  ]
+}

@@ -9,19 +9,313 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`just nextest` and `just outdated`.** The dev shell now ships
-  `cargo-nextest` (per-test process isolation and readable output) and
-  `cargo-outdated` (dependencies with newer versions published). Both are dev
-  aids, wired into no gate: nextest does not run doctests, so `just test` stays
-  what `just check` and `just cover` drive, and an upstream release is not a
-  reason for CI to go red.
+- **The template ships the renovation gates.** Generated projects now format
+  every `*.nix` with `nixfmt`, scan the tree for secrets on demand, track
+  upstream workarounds with canibump, check the crate on Windows MSVC in CI,
+  and can opt into MindTape at generation. `just check` runs a fast batch and
+  then a build batch, each in parallel, printing one verdict on green and only
+  the failed arms' logs on red; `just check cover` adds the coverage pair.
+- **CRAP and jscpd ratchet against committed baselines.** `cargo-crap`'s native
+  `--baseline`/`--fail-regression` and `jscpd`'s `--baseline`/`--fail-on-new-clones`
+  gate new findings; `just tools::crap-baseline` and `just tools::dry-baseline`
+  are the only writers, and a missing baseline fails the gate.
+- **The reference-not-copy decision** records which template pieces are
+  versioned flake inputs, generated files and copied bodies, and the schema
+  convention keeps every future crate config generated and drift-tested.
+
+### Changed
+
+- **The template's tool set moves to qahq `58f9ec9`.** Generated projects
+  get canibump, mindtape 0.5.0, jscpd 5.4.1 (clone baselines and near-miss
+  detection) and cargo-crap 0.3.1 (native CRAP baselines), with linecop,
+  outdatty and mmz moving to their current releases. The pin is a commit, not
+  a branch, so a generated `flake.lock` keeps the exact tool set.
+
+- **A green `just machete`, `just deny` and `just test` print less.**
+  `machete` shows its output only when it fails (its banner said "found
+  nothing" in three lines), `deny` passes `-L error` (43 lines of duplicate
+  version warnings down to 1), and `test` passes `--cargo-quiet` to nextest
+  so a first build prints no `Compiling` lines.
+
+### Fixed
+
+- **The CRAP baseline records repo-relative paths.** cargo-crap writes absolute
+  paths, so a baseline made in a scratch checkout carried `/tmp/...` and suffix
+  matching could pair a function with any same-named file whose tail matched.
+  `just tools::crap-baseline` now strips the checkout root before writing.
+
+- **A release works in the workspace the template grows into.** The release
+  hook, `just release` and both release workflows read the crate name, version
+  and repository from the root `Cargo.toml`, which a virtual workspace root does
+  not have. They now share `.just/scripts/release-meta.sh`, which picks the one
+  publishable package from `cargo metadata` and refuses zero or several;
+  support members set `publish = false`. cargo-release resolves its
+  replacements and hook against the member directory, so the hook dates the
+  root CHANGELOG from `WORKSPACE_ROOT` and runs through it. A new workspace
+  release test proves `just release --dry-run` selects the crate, checks the
+  root CHANGELOG and pushes nothing.
+
+- **A generated project's first release works.** crates.io attaches a Trusted
+  Publisher only to a crate that already exists, so both release workflows use
+  a scoped `CARGO_REGISTRY_TOKEN` when present and skip the OIDC exchange, then
+  switch to OIDC once the secret is gone. `just release` also accepts an empty
+  origin, so the first push can create main.
+
+- **`just land` failed when a lane ended on a commit that only files a task.**
+  `wt-lock.sh amend` put `outdatty.lock` into that last commit, which a
+  commit-msg hook asking for a `Refs:` footer outside `tasks/` refuses. It now
+  folds the lock into the newest commit with a `Refs:` footer, by fixup and
+  autosquash, so the task-filing commit stays tasks-only. `just land-repro`
+  gains a lane that ends on one, with a stand-in commit-msg hook.
+
+- **`just mutants` failed in every generated project.** cargo-mutants 27
+  rejects the `exclude` key in `.cargo/mutants.toml`; the template now writes
+  `exclude_globs`, and spells the bin's entry point `**/src/main.rs` so it
+  matches in a workspace member too.
+
+- **Comments claimed `cargo llvm-cov nextest` ignores `--status-level`; it
+  doesn't.** Measured on cargo-llvm-cov 0.9.0 and cargo-nextest 0.9.143: in a
+  one-crate repro the flag takes 2 `PASS` lines to 0, and in a generated project
+  `--status-level pass` printed 178 `PASS` lines against a `fail` in
+  `.config/nextest.toml`. The level now lives only in that file, where `just
+  test` and `just cover` both read it, and `just test` drops its own flag. The
+  Justfile, `.mmz/config.yaml`, `outdatty.yaml`, `AGENTS.md` and
+  `CONTRIBUTING.md` say only why the level lives in one place.
+
+- **A release could fail half-way and stay that way.** outdatty v0.6.0 and
+  three library tags were published by hand before their tag was pushed, so
+  the tag's `cargo publish` failed on "already exists", the run went red and a
+  binary crate got no GitHub release. The template's release workflows now:
+  - skip `cargo publish` when crates.io already has the version (any answer
+    but 200 or 404 still stops the run), so the GitHub release still happens;
+  - run again on an existing tag through `workflow_dispatch`
+    (`gh workflow run release.yml -f tag=v1.2.3`), with every job checking out
+    the tag and one run per tag at a time;
+  - keep "Latest" on the highest tag when an older one is re-released, and
+    update an existing GitHub release in place.
+
+  `just release X.Y.Z` is now the whole release, so the push of main can't be
+  forgotten and no tag lands on a red commit. It first refuses, with one
+  `error:` and at most two `hint:` lines, a non-semver version, a dirty tree, a
+  branch other than main, an origin/main with commits main lacks, an existing
+  local or remote tag, a version already on crates.io, a CHANGELOG with nothing
+  under `[Unreleased]`, failing gates and a failing `cargo publish --dry-run`.
+  Then it pushes main (fast-forward only), waits for the `ci.yml` run on that
+  exact commit, and tags and pushes the tag only if the run is green.
+  `--dry-run` runs the checks and says what it would push:
+
+  ```
+  dry run: every check passed
+  would push main, wait for ci.yml on it, then tag and push 'v0.3.0'
+  ```
+
+- **`just crap` failed in a lib cloned from git.** A lib ships no `tests/`;
+  cargo-generate leaves an empty one, which a clone drops, and the staleness
+  test behind `just crap` ran `find src tests`, which exits 1 on a directory
+  that is not there. It now searches `tests` only where it exists, and `just
+  validate` deletes empty directories first, so the lib is gated as a clone
+  holds it.
+
+- **`just check-dry` drew a 10-line table to say `0 clones`.** It now uses
+  jscpd's `ai` reporter: 4 lines on a green run, and a red run still names both
+  spans of every clone (`a.rs:1-14 ~ b.rs:1-14`).
+
+- **Four gates whose output cost more than it was worth**, each measured on a
+  real project built from this template and each fixed at the source rather than
+  filtered:
+  - `just deny` printed a full inclusion tree per crate it mentioned — **1411
+    lines** to say `advisories ok, bans ok, licenses ok`, against 145 with
+    `--hide-inclusion-graph` and the identical verdict.
+  - `just crap` printed **every analyzed function**, passing ones included:
+    3532 lines to report success, 10 with `--min 30` matched to the threshold.
+    A red run still names every offender.
+  - `just cover` printed one `PASS` line per test — **2316 lines, 2137 of them
+    `PASS`**. The level moved to `.config/nextest.toml`, where both runners
+    read it; 179 lines, same verdict, failures still printed in full.
+    The file is a `gates-meta` mmz input, since it decides what the suite
+    prints and, the day it grows retries or a default filter, what it runs.
+  - `just cover` also merged profraw from binaries that no longer exist: the
+    `--no-report` + separate `report` split deliberately keeps the pile so runs
+    can be merged, so a long-lived checkout scored deleted code and reported a
+    workspace total several points below the truth. It fails toward pessimism,
+    which no floor complains about. `cargo llvm-cov clean --workspace` now runs
+    first.
+- **`just crap` scored whatever lcov happened to be on disk.** cargo-crap's
+  `--missing pessimistic` grades a function with no coverage record as 0%, so a
+  report older than the tree makes every file added since the last `just cover`
+  look completely untested — measured elsewhere at ten failures naming real
+  functions, every one an artifact, where `just cover` then reported one and
+  exit 0. It now refuses a stale report through `just _lcov-stale-reason`,
+  naming the remedy and printing no table. Deliberately *not* a `cover`
+  prerequisite: that recipe is minutes of instrumented CPU and this gate is
+  seconds, so re-reading the existing report has to stay possible. The same
+  `--missing pessimistic` rule is why the gate now excludes `tests/**` and every
+  ejected `*_tests.rs` — llvm-cov instruments the code under test, not the
+  suite, so those files have no record and the gate was grading test helpers.
+- **`just fix-check` no longer goes red over a near-limit Markdown file.**
+  `just eject` piped `linecop --baseline 90 --format paths` into ejectest under
+  `bash -eo pipefail`; linecop exits 1 to FLAG files at/over the baseline (a
+  finding, not a failure to run), so the pipeline died on the producer before
+  ejectest ever ran — any file at ≥90% of its limit red the whole
+  `fix-check`, even when nothing was ejectable (the scan also handed Markdown
+  paths to a tool that moves inline Rust test modules). The recipe now masks
+  linecop's finding-exit and narrows the scan to `*.rs`. `just validate` grows
+  a generated project's README.md past the 90% baseline and requires
+  `just fix-check` to stay green.
+- **`just validate` re-asserts the shipped `flake.lock` after the nix block.**
+  `nix develop` silently re-resolves (and rewrites `flake.lock` in place) if
+  the lock ever drifts from `flake.nix`'s inputs; the pre-nix byte-identity
+  check only proved the lock shipped. A post-nix `cmp` fails the gate instead
+  of letting it test upstream HEAD on a re-resolved lock.
+- **Three leftovers from the output port**, each in the template itself:
+  `[no-exit-message]` on the root and template `mmz` recipes, so just's own
+  `error: Recipe 'mmz' failed` line stops burying the reason a gate actually
+  printed; `just count-tests` reads nextest's JSON listing instead of running
+  the whole suite to scrape `N tests run` out of its summary; and `just test`
+  forwards ARGS with `[positional-arguments]`, so a filter containing a space
+  reaches each pass as one argument and a wildcard is not re-globbed. The
+  template shell grows `jq` for the listing.
+- **Generated projects inherit a validated `flake.lock`, and `just validate`
+  now tests exactly what ships.** cargo-generate used to drop `flake.lock`
+  (`cargo-generate.toml`), so a generated project re-resolved every input at
+  upstream HEAD on its first `nix develop` — a stale pin in
+  `template/flake.lock` (qahq v0.2.0, outdatty 0.3.0) could never trip the
+  gate, even though any project that carried the lock failed `just check` out
+  of the box (`unknown field require_tracked` — outdatty learned the field
+  only in 0.4.0). The lock now ships with every generated project (bump with
+  `nix flake update` on your own schedule), and validate asserts the
+  generated lock is byte-identical to the template's — a regression in the
+  ignore list fails loudly instead of silently stopping the gate from
+  testing the shipped pins. qahq is pinned to v0.4.0 (outdatty 0.4.0, mmz
+  0.10.0, linecop 0.4.0), with mmz now taken through qahq rather than a
+  direct input.
+- **Generated projects pass `just check` on their first real commit.** The
+  template ships an explicit `require_tracked` in `outdatty.yaml`, listing only
+  files that carry hand-written coupling (`src/**`, `www/**`, the docs, and the
+  manifests). Without it outdatty defaults to requiring every tracked file, so
+  the scaffold's configs, CI, and lockfiles had to belong to a group for
+  `outdatty-check` to pass at all. New source modules still trip the gate — the
+  failure message now points at the manifest, which says to add them to a group.
+
+- **A generated project's first `just check` passes.** `outdatty-check`
+  bootstraps a missing `outdatty.lock` and asks for a review; an existing lock
+  is never refreshed, so real drift still fails. `outdatty.yaml` braces the
+  `Cargo.toml` globs so a single-crate project no longer warns, and the docs
+  note the one-time `Cargo.lock` miss. Bin, lib and workspace first checks are
+  green.
+
+- **A quote or line break in `description` is refused.** The placeholder regex
+  rejects `"`, `\`, CR/LF, the other C0 controls and DEL, and
+  `cargo-generate >= 0.16.0` enforces it before writing any file;
+  `scripts/test-description.sh` is the regression.
+
+### Added
+
+- **Two parallel lanes land without a conflict.** Two `just fork` lanes that
+  each add a CHANGELOG entry and re-confirm `outdatty.lock` stopped the second
+  `just land` on both files. A generated crate now ships `.gitattributes`
+  (`CHANGELOG.md` merges as a union, `outdatty.lock` goes to an `outdatty` merge
+  driver that `just install-hooks` defines and that keeps main's copy). The
+  `pre-merge` hooks in `.config/wt.toml` run `.just/scripts/wt-lock.sh`:
+  `refresh` re-records the merged tree with `outdatty update` when the check is
+  red, and `amend` folds the lock into the lane's last commit once the gate
+  passed. `just land-repro` replays two such lanes in a scratch repo under
+  /tmp, and `just validate` runs it. A line both lanes reworded stays twice in
+  the changelog: read it after landing. Ported from corpuspeak (779d3b8).
+
+- **The gates cover a Cargo workspace as well as one crate.** A project that
+  moves its crates under `crates/` needs no edit to the template's files:
+  `Justfile` reads the source roots from whether `crates/` exists
+  (`_lcov-stale-reason`, `check-dry`, `eject`), the mmz `rust` and `manifests`
+  scopes and outdatty's sources name `crates/` beside `src/`, and `flake.nix`
+  sets a `pname`, without which `nix run` looked for the binary of
+  `rust-workspace-unknown`. The doctest pass prints five lines per member even
+  with no doctest, so `just test` now shows it only on failure. `just validate`
+  converts a copy of the generated project to a workspace (a second member with
+  a doctest) and gates that too. Release files still read the crate name from
+  the root `Cargo.toml`.
+
+- **Worktrunk delegation ships in the template.** Hooks in a user's own config
+  don't travel with a clone, and without them `wt merge` squashes the branch,
+  commits a dirty tree and runs no gate. A generated crate now carries
+  `.config/wt.toml` and puts `worktrunk` in its dev shell. `just fork <slug>`
+  makes a sibling worktree on a new branch (`pre-start` allows its `.envrc`);
+  `just land` runs `wt merge --no-squash --no-commit --yes`, so every branch
+  commit survives and a dirty tree is refused. Before the merge, `pre-merge`
+  runs `just check`, then `mt check --commits <main>..HEAD` where the crate has
+  a `.mindtape/` and `mt` is installed (the dev shell does not ship `mt`;
+  otherwise `.just/scripts/wt-tasks.sh` skips it and says so). After it,
+  `pre-remove` imports the gate records into the primary checkout with
+  `mmz --import` (a no-op until the pinned mmz has that flag) and carries the
+  coverage lcov over with `.just/scripts/wt-carry-lcov.sh`, so `just crap`
+  there needs no second instrumented build. `just validate` runs the lcov
+  carry through seven cases.
+- **`just outdated`.** The dev shell now ships `cargo-outdated`
+  (dependencies with newer versions published) as a dev aid wired into no
+  gate: an upstream release is not a reason for CI to go red.
 - **`just status`.** One-line view of every memoized rule's freshness
   (`mmz --status`): which arms of `just check` would re-run, and whether the
   pre-commit hook's `mmz --is-fresh --tag gate` would pass right now. Reads
   mmz's records only — runs no gate.
+- **Template docs are generated from Typst sources.**
+  `template/docs/src/*.typ` render through `docs/generate-md.sh` (Typst and
+  typlite) into the committed `AGENTS.md`, `CONTRIBUTING.md` and `README.md`;
+  `docs-md-check` fails on a hand edit or a stale render. The sources are
+  variant-neutral, `typst`, `tinymist` and `typstyle` ship in the dev shell,
+  and root `just docs-sync` / `docs-check` regenerate and verify them. The
+  generated docs are leaner: AGENTS 17 lines/2.3 KB, CONTRIBUTING 96/6.7 KB,
+  README 38/1.1 KB.
+- **Static lint and rustdoc gates.** The template's `just check` runs
+  `lint::workflows` (actionlint), `lint::shellcheck` (warning level, every
+  tracked shebang script) and `lint::doc` (`RUSTDOCFLAGS=-D warnings cargo doc
+  --workspace --no-deps --document-private-items`); root `just lint` runs
+  actionlint and shellcheck over this repository too. Both tools ship in the
+  root and template dev shells.
+- **A commit refuses local machine paths.** The tracked
+  `.githooks/local-paths` scans the staged index for `$HOME`, the checkout and
+  the worktree's primary checkout, so a pasted log line cannot be committed;
+  `pre-commit` runs it and `just install-hooks` wires `core.hooksPath`.
+- **Dependency updates have owners.** Dependabot groups Cargo updates and
+  covers GitHub Actions monthly; Renovate enables only the Nix manager for
+  `flake.lock` (it needs the Renovate GitHub App installed).
+- **CI gates the backlog.** Root `just check-tasks` runs `mt check && mt fix
+  --check`, and `ci.yml` runs it as a step, so a malformed or stale task file
+  fails the build.
 
 ### Changed
 
+- **`just release` runs cargo-release instead of a 95-line recipe.** A generated
+  crate gets `release.toml` and `.just/scripts/release-hook.sh`, and `cargo-release`
+  in its dev shell. cargo-release bumps `Cargo.toml`, dates the entries under
+  `[Unreleased]` as `## [X.Y.Z] - <date>` and commits, so nobody dates the
+  CHANGELOG by hand any more; the hook keeps every refusal and hint of the old
+  recipe, bar "requested a version that `Cargo.toml` does not carry", which the
+  bump makes moot. The recipe still pushes main, waits for `ci.yml`
+  (`.just/scripts/release-ci.sh`) and tags only on a green run. A re-run after
+  a red run finds the bump and the dating done and changes nothing twice. The
+  hook runs `just check` after the bump, since the bump itself makes the memoized
+  gates stale, and refreshes outdatty's `release-notes` group.
+- **Integration tests start as one binary.** A generated bin ships
+  `tests/it/main.rs` (`mod cli;`) and `tests/it/cli.rs` instead of a lone
+  `tests/cli.rs`. Cargo builds one executable per file directly in `tests/`,
+  each linking every dependency again; a module under `tests/it/` joins the one
+  `it` binary, and nextest still runs every test in its own process. A lib
+  keeps no `tests/` at all, so it starts with no empty binary; `AGENTS.md` and
+
+- **`just test` gates on cargo-nextest; doctests run in their own pass.** The
+  gate is now `cargo nextest run --workspace --status-level fail` (one process
+  per test, so a panic or a hang is isolated) followed by `cargo test
+  --workspace --doc` — nextest does not run doctests, so a project with any
+  keeps them gated and one with none pays a fast no-op. A green run prints the
+  run header and the summary instead of a result block per binary (a thousand
+  lines at 800 tests), and a red one prints every failure in full. `just cover`
+  moves to `cargo llvm-cov nextest` so gate and coverage share the same runner
+  — process-per-test and shared-process are different execution models, and a
+  test must not pass under one and fail under the other with nothing saying
+  so. The standalone `just nextest` recipe is folded into `just test` (it was
+  the same command with a different status filter), and `just count-tests`
+  scrapes nextest's `N tests run` summary line instead of `cargo test`'s
+  `test result:` lines.
 - **Git hook is tracked and auto-wired.** `.githooks/pre-commit` follows the
   clone (no post-clone copy); `just install-hooks` now runs
   `git config core.hooksPath .githooks` (the dev-shell `shellHook` runs the
@@ -36,6 +330,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gives neither). `cover`, `check-dry`, and `install-hooks` are plain recipes
   now; `release` and `mutants-diff` keep a shebang because they need one shell
   across several lines. No `-u`.
+- **Tool bump: qahq to main.** `template/flake.lock` moves qahq from 0.4.0 to
+  ae800a0: linecop v0.4.0 → v0.7.0, outdatty 0.7.0, ejectest 0.5.0, and a
+  `jscpd` that evaluates without the `stdenv.isDarwin` / `stdenv.isLinux`
+  deprecation warnings every generated dev shell printed on load. The shipped
+  `.linecop.yaml` and `outdatty.yaml` need no change. `just eject` now masks
+  only linecop's finding exit (1), so a broken linecop (exit 2 since 0.5)
+  fails the recipe instead of reading as nothing to eject.
+- **The template Justfile is a thin surface over scripts.**
+  `template/Justfile` drops from 411 to 205 lines, labels every recipe with
+  `[doc]`/`[group]`, and moves long bodies to `.just/scripts/`;
+  `.just/scripts/**` is now a `gates-meta` input, and the cover/CRAP globs work
+  in a workspace. Root `just validate` is 44 lines over `scripts/validate.sh`,
+  `scripts/test-release.sh` and `scripts/test-workspace.sh`, with both
+  `outdatty-update` calls gone.
+- **Coverage reports a per-file floor, CRAP speaks GitHub, mutants use
+  nextest.** `just cover` prints only the report header and TOTAL; the gate is
+  70% workspace line coverage plus 60% for any production file with at least 5
+  uncovered lines (tests excluded). `just crap` passes `--format github
+  --threshold 30 --fail-above` and excludes `**/main.rs`, so green is silent
+  and red names each offender. `.cargo/mutants.toml` runs mutants under
+  nextest across the workspace with `profile = "mutants"`.
+- **linecop measures hidden files.** Both configs set `include_hidden: true`;
+  the template caps BASH/Shell at 200, Just at 210 and Typst at 250, and
+  excludes `**/CHANGELOG.md`. Root `just check-docs` runs both configs.
 
 ## [0.2.0] - 2026-07-31
 

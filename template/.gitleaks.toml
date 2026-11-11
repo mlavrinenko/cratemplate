@@ -1,0 +1,21 @@
+# gitleaks reads the default rules from the binary; this file only keeps
+# deliberate fakes and generated output out of the scan.
+[extend]
+useDefault = true
+
+# A test fixture or docs example is reviewed content, not a pasted credential.
+[[allowlists]]
+description = "Deliberate fake secrets in test fixtures and docs examples."
+paths = [
+  '''(^|/)tests/fixtures/''',
+  '''(^|/)docs/src/.*\.typ$''',
+]
+
+# Cargo and the dev shell write high-entropy keys into their state. Those are
+# generated, never committed, and would bury a real finding.
+[[allowlists]]
+description = "Cargo and dev-shell output."
+paths = [
+  '''(^|/)target/''',
+  '''(^|/)\.direnv/''',
+]

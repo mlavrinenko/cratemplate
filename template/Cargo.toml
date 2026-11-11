@@ -1,5 +1,5 @@
 [workspace]
-members = [] # Add sub-crate paths here as the project grows
+members = [] # Add sub-crate paths here as the project grows; a workspace keeps them under crates/
 
 [package]
 name = "{{project-name}}"
@@ -44,6 +44,10 @@ strip = true
 lto = true
 codegen-units = 1
 panic = "abort"
+
+[profile.mutants]
+inherits = "dev"
+debug = false
 
 [lints]
 workspace = true

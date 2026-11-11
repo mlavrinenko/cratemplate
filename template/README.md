@@ -1,63 +1,39 @@
+<!-- Generated from docs/src/readme.typ by just docs-md. Do not edit; edit the source. -->
+
 # {{project-name}}
 
-[![CI](https://github.com/{{gh-username}}/{{project-name}}/actions/workflows/ci.yml/badge.svg)](https://github.com/{{gh-username}}/{{project-name}}/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/{{project-name}}.svg)](https://crates.io/crates/{{project-name}})
-[![License: {{license}}](https://img.shields.io/crates/l/{{project-name}}.svg)]({% if license == "GPL-3.0-only" %}LICENSE-GPL{% elsif license == "Apache-2.0" %}LICENSE-APACHE{% else %}LICENSE-MIT{% endif %})
+<a href="https://github.com/{{gh-username}}/{{project-name}}/actions/workflows/ci.yml"><img src="https://github.com/{{gh-username}}/{{project-name}}/actions/workflows/ci.yml/badge.svg" alt="CI" /></a> <a href="https://crates.io/crates/{{project-name}}"><img src="https://img.shields.io/crates/v/{{project-name}}.svg" alt="crates.io" /></a>
 
 {{description}}
 
 ## Install
-{%- if crate_kind == "bin" %}
 
-### From crates.io
+| **Kind** | **Command** |
+| --- | --- |
+| Binary | `cargo install {{project-name}}` |
+| Library | `cargo add {{crate_name}}` |
 
-```bash
-cargo install {{project-name}}
-```
-
-### From binary releases
-
-Download a pre-built binary from the
-[latest release](https://github.com/{{gh-username}}/{{project-name}}/releases/latest).
-{%- endif %}
-{%- if crate_kind == "lib" %}
-
-```bash
-cargo add {{crate_name}}
-```
-{%- endif %}
+A git dependency makes the crates.io install impossible: crates.io rejects a package whose dependency is not published there. A binary with such a dependency has no crates.io path, so release and install its binary instead.
 
 ## Usage
-{%- if crate_kind == "bin" %}
 
-```bash
-{{project-name}}
-```
-{%- endif %}
-{%- if crate_kind == "lib" %}
-
-```rust
-{{crate_name}}::greet("world")?;
-```
-{%- endif %}
+| **Kind** | **Example** |
+| --- | --- |
+| Binary | `{{project-name}}` |
+| Library | `{{crate_name}}::greet("world")?;` |
 
 ## Development
 
 Prerequisites: [Nix](https://nixos.org/) with flakes enabled.
 
 ```bash
-direnv allow         # or: nix develop
-just install-hooks   # pre-commit hook running the (memoized) gate
-
-just check           # fmt, clippy, tests, unused deps, file size, drift, copy-paste
-just deny            # cargo-deny: advisories, licenses, bans (needs network)
-just build
-just test
-just cover           # code coverage via cargo-llvm-cov (70% minimum)
-just fmt             # format code
+direnv allow    # or: nix develop
+just check      # the full gate
+just test       # tests + doctests
+just cover      # coverage (70% floor)
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for coding conventions.
+Run `just` for the rest; see [CONTRIBUTING.md](CONTRIBUTING.md) for conventions.
 
 ## License
 

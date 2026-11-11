@@ -7,3 +7,16 @@ updates:
     commit-message:
       prefix: "ci"
       include: "scope"
+
+  # Cargo.toml (and Cargo.lock when present): one grouped PR per monthly run.
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      cargo:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore"
+      include: "scope"

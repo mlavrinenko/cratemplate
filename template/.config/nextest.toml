@@ -1,0 +1,8 @@
+# The output level of nextest's default profile, stated once so every runner
+# shares it. `just test` and `just cover` (`cargo llvm-cov nextest`) both read
+# it here, so neither recipe repeats it as a flag.
+#
+# A green run prints the summary and nothing per test; a failure still prints,
+# per test, which is the whole point of `fail` rather than `none`.
+[profile.default]
+status-level = "fail"

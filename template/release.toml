@@ -1,0 +1,17 @@
+# cargo-release config for `just release VERSION`. Run it through that recipe:
+# the recipe adds the CI wait before the tag, which cargo-release lacks.
+allow-branch = ["main"]
+# release.yml publishes on the tag push, never this machine.
+publish = false
+tag-prefix = ""
+tag-name = "v{{version}}"
+tag-message = "v{{version}}"
+pre-release-commit-message = "chore(release): {{version}}"
+# The checks cargo-release lacks, run once per release (and in a dry run).
+# There is no `pre-release-replacements` entry for CHANGELOG.md: cargo-release
+# resolves those against the package root, which a workspace member leaves
+# without the root CHANGELOG, so the hook dates [Unreleased] from
+# WORKSPACE_ROOT instead. That one config serves a root crate and a workspace.
+# The hook runs through WORKSPACE_ROOT too: cargo-release starts it in the
+# package root, and a member has no .just/ of its own.
+pre-release-hook = ["bash", "-c", "bash \"$WORKSPACE_ROOT/.just/scripts/release-hook.sh\""]
