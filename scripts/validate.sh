@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
-# scripts/validate.sh <bin|lib>: generate a project from template/, gate it in
-# its dev shell, run the release path, then gate a copy converted to a
-# workspace. `just validate [KIND]` calls this.
+# scripts/validate.sh <bin|lib> [none|mindtape]: generate a project from
+# template/, gate it in its dev shell, run the release path, then gate a copy
+# converted to a workspace. `just validate [KIND] [TRACKER]` calls this.
 set -eo pipefail
 
 kind="${1:-}"
+tracker="${2:-none}"
 case "$kind" in
   bin|lib) ;;
-  *) echo "usage: just validate <bin|lib>" >&2; exit 1 ;;
+  *) echo "usage: just validate <bin|lib> [none|mindtape]" >&2; exit 1 ;;
+esac
+case "$tracker" in
+  none|mindtape) ;;
+  *) echo "usage: just validate <bin|lib> [none|mindtape]" >&2; exit 1 ;;
 esac
 
 TEMPLATE_DIR="$(pwd)"
@@ -35,7 +40,7 @@ just check-docs
 step "Regression: description placeholder rejects unsafe input"
 bash scripts/test-description.sh
 
-step "Generating $kind project from template"
+step "Generating $kind project ($tracker tracker) from template"
 # `--inputs-from` pins cargo-generate through this repo's flake.lock, so CI
 # and local runs match; unpinned, CI drifted to 0.25 while local stayed on 0.23.
 nix shell --inputs-from "$TEMPLATE_DIR" nixpkgs#cargo-generate nixpkgs#cargo --command \
@@ -45,7 +50,8 @@ nix shell --inputs-from "$TEMPLATE_DIR" nixpkgs#cargo-generate nixpkgs#cargo --c
         --define "description=Validation test project" \
         --define "license=MIT" \
         --define "gh-username=testuser" \
-        --define "crate_kind=$kind"
+        --define "crate_kind=$kind" \
+        --define "task_tracker=$tracker"
 
 cd "$WORK_DIR/$PROJECT_NAME"
 

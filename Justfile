@@ -13,8 +13,8 @@ mmz *ARGS:
 
 [doc('Generate a project from template/ and run every gate')]
 [group('validate')]
-validate KIND='bin':
-    bash scripts/validate.sh "{{ KIND }}"
+validate KIND='bin' TRACKER='none':
+    bash scripts/validate.sh "{{ KIND }}" "{{ TRACKER }}"
 
 [doc('Regenerate the template Markdown docs from docs/src/*.typ')]
 [group('validate')]
