@@ -3,7 +3,7 @@
   "version": "0.3.1",
   "entries": [
     {
-      "file": "/tmp/template-baseline/src/lib.rs",
+      "file": "src/lib.rs",
       "function": "greet",
       "line": 16,
       "cyclomatic": 2.0,

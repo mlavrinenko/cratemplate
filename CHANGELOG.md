@@ -39,6 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The CRAP baseline records repo-relative paths.** cargo-crap writes absolute
+  paths, so a baseline made in a scratch checkout carried `/tmp/...` and suffix
+  matching could pair a function with any same-named file whose tail matched.
+  `just tools::crap-baseline` now strips the checkout root before writing.
+
 - **A release works in the workspace the template grows into.** The release
   hook, `just release` and both release workflows read the crate name, version
   and repository from the root `Cargo.toml`, which a virtual workspace root does

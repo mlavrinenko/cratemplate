@@ -20,6 +20,16 @@ if [ -n "$reason" ]; then
     echo "  (the baseline must record the tree the lcov measured)" >&2
     exit 1
 fi
+out=.config/crap-baseline.json
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
 cargo crap --lcov target/coverage/lcov.info --workspace \
     --exclude '**/main.rs' --exclude 'tests/**' --exclude '**/*_tests.rs' \
-    --format json --sort file --output .config/crap-baseline.json
+    --format json --sort file --output "$tmp"
+# cargo-crap writes absolute paths. The baseline is committed and shared by
+# every checkout, so record repo-relative paths instead: a machine root would
+# make suffix matching pair a function with any same-named file whose path
+# happens to share the tail (every workspace member's src/lib.rs does).
+root=$(pwd -P)/
+jq --arg root "$root" '.entries |= map(.file |= ltrimstr($root))' \
+    "$tmp" >"$out"
